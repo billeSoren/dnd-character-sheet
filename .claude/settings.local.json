@@ -9,7 +9,16 @@
       "Bash(npm install *)",
       "Bash(npm run *)",
       "Bash(gh repo *)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(node -e \"const d = require\\('dnd5-srd'\\); console.log\\(Object.keys\\(d\\)\\)\")",
+      "Bash(node -e \"const { data } = require\\('dnd5-srd'\\); console.log\\(Object.keys\\(data\\)\\)\")",
+      "Bash(node -e \"const { data } = require\\('dnd5-srd'\\); console.log\\(JSON.stringify\\(data.classes[0], null, 2\\)\\)\")",
+      "Bash(node -e \"const { data } = require\\('dnd5-srd'\\); console.log\\(JSON.stringify\\(data.races[0], null, 2\\)\\)\")",
+      "Bash(node -e \"const { data } = require\\('dnd5-srd'\\); console.log\\(JSON.stringify\\(data.backgrounds[0], null, 2\\)\\)\")",
+      "Bash(node -e \"const { data } = require\\('dnd5-srd'\\); console.log\\(JSON.stringify\\(data.skills[0], null, 2\\)\\)\")",
+      "Bash(node -e \"const { data } = require\\('dnd5-srd'\\); console.log\\(JSON.stringify\\(data.spells[0], null, 2\\)\\)\")",
+      "Bash(node -e \"const { data } = require\\('dnd5-srd'\\); console.log\\(data.classes.map\\(c=>c.name\\)\\)\")",
+      "Bash(node -e \"const { data } = require\\('dnd5-srd'\\); console.log\\(data.races.map\\(r=>r.name\\)\\)\")"
     ]
   }
 }

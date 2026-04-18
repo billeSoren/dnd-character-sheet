@@ -34,6 +34,7 @@ export interface Database {
           background?: string
           created_at?: string
         }
+        Relationships: []
       }
       character_stats: {
         Row: {
@@ -66,6 +67,7 @@ export interface Database {
           wisdom?: number
           charisma?: number
         }
+        Relationships: []
       }
       character_hp: {
         Row: {
@@ -89,8 +91,13 @@ export interface Database {
           current_hp?: number
           temp_hp?: number
         }
+        Relationships: []
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
 

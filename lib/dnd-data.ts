@@ -8,6 +8,7 @@ export interface DnDClass {
   proficiencies: string[]
   skillChoices: { choose: number; from: string[] }
   subclasses: string[]
+  savingThrows: string[]
 }
 
 export interface DnDRace {
@@ -53,6 +54,7 @@ export const classes: DnDClass[] = data.classes.map((c: any) => ({
       }
     : { choose: 0, from: [] },
   subclasses: (c.subclasses as any[]).map((s: any) => s.name),
+  savingThrows: (c.saving_throws as any[]).map((s: any) => s.name),
 }))
 
 export const races: DnDRace[] = data.races.map((r: any) => ({

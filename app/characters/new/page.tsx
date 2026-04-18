@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { classes, races } from '@/lib/dnd-data'
+import { classes, races, backgrounds } from '@/lib/dnd-data'
 import {
   CharacterFormData,
   DEFAULT_FORM_DATA,
@@ -100,6 +100,12 @@ export default function NewCharacterPage() {
     const conMod = modifier(finalStats.CON)
     const maxHP = calculateMaxHP(hitDie, conMod, formData.level)
 
+    const selectedBg = backgrounds.find((b) => b.name === formData.background)
+    const allSkills = [
+      ...(selectedBg?.skillProficiencies ?? []),
+      ...formData.selectedSkills,
+    ]
+
     // Insert character
     const { data: char, error: charError } = await supabase
       .from('characters')
@@ -110,6 +116,7 @@ export default function NewCharacterPage() {
         class: formData.className,
         level: formData.level,
         background: formData.background,
+        skill_proficiencies: allSkills,
       })
       .select()
       .single()

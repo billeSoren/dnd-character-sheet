@@ -12,6 +12,7 @@ export interface Database {
           class: string
           level: number
           background: string
+          skill_proficiencies: string[] | null
           created_at: string
         }
         Insert: {
@@ -22,6 +23,7 @@ export interface Database {
           class: string
           level?: number
           background: string
+          skill_proficiencies?: string[] | null
           created_at?: string
         }
         Update: {
@@ -32,6 +34,7 @@ export interface Database {
           class?: string
           level?: number
           background?: string
+          skill_proficiencies?: string[] | null
           created_at?: string
         }
         Relationships: []

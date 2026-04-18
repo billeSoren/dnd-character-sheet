@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0c0a09;
+  --foreground: #faf7f0;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .fantasy-border {
+    border-image: linear-gradient(135deg, #78350f, #d97706, #78350f) 1;
+  }
+
+  .parchment-bg {
+    background: radial-gradient(ellipse at center, #1c1917 0%, #0c0a09 100%);
+  }
+}

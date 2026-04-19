@@ -19,10 +19,10 @@ export default function AuthButton({ user }: AuthButtonProps) {
   if (user) {
     return (
       <div className="flex items-center gap-4">
-        <span className="text-amber-200/70 text-sm">{user.email}</span>
+        <span className="text-dnd-muted text-sm hidden sm:block">{user.email}</span>
         <button
           onClick={handleSignOut}
-          className="px-4 py-2 text-sm border border-amber-700/50 text-amber-400 hover:bg-amber-900/30 rounded transition-colors"
+          className="px-4 py-2 text-sm border border-dnd-border text-dnd-muted hover:text-dnd-text hover:border-dnd-text rounded-lg transition-colors"
         >
           Log ud
         </button>
@@ -33,7 +33,7 @@ export default function AuthButton({ user }: AuthButtonProps) {
   return (
     <Link
       href="/login"
-      className="px-5 py-2.5 bg-amber-700 hover:bg-amber-600 text-stone-100 font-semibold rounded transition-colors"
+      className="px-5 py-2 bg-dnd-accent hover:opacity-90 text-white font-semibold rounded-lg transition-opacity text-sm"
     >
       Log ind
     </Link>

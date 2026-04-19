@@ -2,9 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Legacy vars (used by existing pages) ─────────────── */
 :root {
   --background: #0c0a09;
   --foreground: #faf7f0;
+}
+
+/* ── DnD theme: light (default) ───────────────────────── */
+:root {
+  --dnd-bg:     #ede8df;
+  --dnd-card:   #ffffff;
+  --dnd-text:   #1c1c1e;
+  --dnd-accent: #c96a1e;
+  --dnd-border: #d8d0c4;
+  --dnd-muted:  #8a8070;
+  --dnd-subtle: #f5f2ec;
+}
+
+/* ── DnD theme: dark ──────────────────────────────────── */
+.dark {
+  --dnd-bg:     #0d0d1a;
+  --dnd-card:   #1a1a2e;
+  --dnd-text:   #f0e6d3;
+  --dnd-accent: #d4891a;
+  --dnd-border: #2a2640;
+  --dnd-muted:  #7a7090;
+  --dnd-subtle: #16213e;
 }
 
 body {
@@ -14,15 +37,11 @@ body {
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
+  .parchment-bg { background: radial-gradient(ellipse at center, #1c1917 0%, #0c0a09 100%); }
 
-  .fantasy-border {
-    border-image: linear-gradient(135deg, #78350f, #d97706, #78350f) 1;
-  }
-
-  .parchment-bg {
-    background: radial-gradient(ellipse at center, #1c1917 0%, #0c0a09 100%);
-  }
+  /* Scrollbar styling for dark theme */
+  .dnd-scrollbar::-webkit-scrollbar { width: 6px; }
+  .dnd-scrollbar::-webkit-scrollbar-track { background: var(--dnd-bg); }
+  .dnd-scrollbar::-webkit-scrollbar-thumb { background: var(--dnd-border); border-radius: 3px; }
 }

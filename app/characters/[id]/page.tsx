@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { classes, races, skills as allSkills } from '@/lib/dnd-data'
 import { StatKey } from '@/components/character-builder/types'
 import HPTracker from '@/components/HPTracker'
+import ThemeToggle from '@/components/ThemeToggle'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
@@ -102,41 +103,44 @@ export default async function CharacterPage({ params }: { params: { id: string }
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-stone-950">
+    <div className="min-h-screen bg-dnd-bg">
       {/* Header */}
-      <header className="border-b border-amber-900/30 bg-stone-950/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-dnd-border bg-dnd-bg/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4">
-          <Link href="/" className="text-stone-500 hover:text-amber-400 transition-colors text-sm">
+          <Link href="/" className="text-dnd-muted hover:text-dnd-accent transition-colors text-sm">
             ← Tilbage
           </Link>
-          <div className="h-4 w-px bg-stone-800" />
-          <span className="text-amber-300 font-bold">{character.name}</span>
-          <span className="text-stone-600 text-sm hidden sm:block">
+          <div className="h-4 w-px bg-dnd-border" />
+          <span className="text-dnd-accent font-bold">{character.name}</span>
+          <span className="text-dnd-muted text-sm hidden sm:block">
             {character.race} · {character.class} · Niveau {character.level}
           </span>
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
 
         {/* ── Identity banner ───────────────────────────────────────────────── */}
-        <div className="relative border border-amber-900/40 bg-stone-900/50 rounded-lg p-6">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-700/50 to-transparent rounded-t-lg" />
+        <div className="relative border border-dnd-border bg-dnd-card rounded-lg p-6">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-dnd-accent/50 to-transparent rounded-t-lg" />
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl font-bold text-amber-200 leading-tight">
+              <h1 className="text-3xl sm:text-4xl font-bold text-dnd-text leading-tight">
                 {character.name}
               </h1>
-              <p className="text-stone-400 mt-1">
-                {character.race} · <span className="text-amber-400">{character.class}</span>
-                {raceData && <span className="text-stone-600 text-sm"> · {raceData.size}, {raceData.speed} ft</span>}
+              <p className="text-dnd-muted mt-1">
+                {character.race} · <span className="text-dnd-accent">{character.class}</span>
+                {raceData && <span className="text-dnd-muted text-sm"> · {raceData.size}, {raceData.speed} ft</span>}
               </p>
-              <p className="text-stone-500 text-sm mt-1">Baggrund: {character.background}</p>
+              <p className="text-dnd-muted text-sm mt-1 opacity-70">Baggrund: {character.background}</p>
             </div>
 
             <div className="flex gap-3 flex-wrap">
               <StatBadge label="Niveau" value={String(character.level)} />
-              <StatBadge label="Proficiency Bonus" value={`+${profBonus}`} highlight />
+              <StatBadge label="Proficiency" value={`+${profBonus}`} highlight />
               <StatBadge label="Passiv perception" value={String(passivePerception)} />
             </div>
           </div>
@@ -152,20 +156,20 @@ export default async function CharacterPage({ params }: { params: { id: string }
               return (
                 <div
                   key={key}
-                  className="border border-stone-800 bg-stone-900/50 rounded-lg p-4 flex flex-col items-center gap-1 text-center"
+                  className="border border-dnd-border bg-dnd-card rounded-lg p-4 flex flex-col items-center gap-1 text-center"
                 >
-                  <span className="text-xs font-bold text-amber-400/70 tracking-widest">{abbr}</span>
+                  <span className="text-xs font-bold text-dnd-accent tracking-widest">{abbr}</span>
                   <span
                     className={`text-3xl font-bold leading-none mt-1 ${
-                      mod > 0 ? 'text-green-400' : mod < 0 ? 'text-red-400' : 'text-stone-400'
+                      mod > 0 ? 'text-green-500' : mod < 0 ? 'text-red-400' : 'text-dnd-muted'
                     }`}
                   >
                     {modStr(score)}
                   </span>
-                  <div className="mt-2 w-10 h-10 rounded-full border-2 border-stone-700 flex items-center justify-center">
-                    <span className="text-amber-100 font-semibold text-sm">{score}</span>
+                  <div className="mt-2 w-10 h-10 rounded-full border-2 border-dnd-border flex items-center justify-center">
+                    <span className="text-dnd-text font-semibold text-sm">{score}</span>
                   </div>
-                  <span className="text-stone-600 text-xs">{label}</span>
+                  <span className="text-dnd-muted text-xs">{label}</span>
                 </div>
               )
             })}
@@ -189,23 +193,23 @@ export default async function CharacterPage({ params }: { params: { id: string }
           {/* Saving Throws */}
           <div>
             <SectionHeading>Saving Throws</SectionHeading>
-            <div className="border border-stone-800 bg-stone-900/50 rounded-lg overflow-hidden">
+            <div className="border border-dnd-border bg-dnd-card rounded-lg overflow-hidden">
               {savingThrows.map((save, i) => (
                 <div
                   key={save.key}
-                  className={`flex items-center gap-3 px-4 py-2.5 ${i < savingThrows.length - 1 ? 'border-b border-stone-800/60' : ''}`}
+                  className={`flex items-center gap-3 px-4 py-2.5 ${i < savingThrows.length - 1 ? 'border-b border-dnd-border' : ''}`}
                 >
                   <span
                     className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-                      save.proficient ? 'bg-amber-600 border-amber-500' : 'border-stone-700'
+                      save.proficient ? 'bg-dnd-accent border-dnd-accent' : 'border-dnd-border'
                     }`}
                   />
-                  <span className={`flex-1 text-sm ${save.proficient ? 'text-amber-200 font-medium' : 'text-stone-400'}`}>
+                  <span className={`flex-1 text-sm ${save.proficient ? 'text-dnd-text font-medium' : 'text-dnd-muted'}`}>
                     {save.label}
                   </span>
                   <span
                     className={`text-sm font-bold tabular-nums ${
-                      save.total > 0 ? 'text-green-400' : save.total < 0 ? 'text-red-400' : 'text-stone-500'
+                      save.total > 0 ? 'text-green-500' : save.total < 0 ? 'text-red-400' : 'text-dnd-muted'
                     }`}
                   >
                     {save.total >= 0 ? '+' : ''}{save.total}
@@ -214,7 +218,7 @@ export default async function CharacterPage({ params }: { params: { id: string }
               ))}
             </div>
             {classData && (
-              <p className="text-xs text-stone-600 mt-2 px-1">
+              <p className="text-xs text-dnd-muted mt-2 px-1 opacity-70">
                 {character.class} er proficient i {classData.savingThrows.join(' og ')} saving throws
               </p>
             )}
@@ -224,30 +228,30 @@ export default async function CharacterPage({ params }: { params: { id: string }
           <div>
             <SectionHeading>
               Færdigheder
-              <span className="ml-2 text-amber-700 font-normal">
+              <span className="ml-2 text-dnd-accent font-normal">
                 ({skillList.filter((s) => s.proficient).length} proficient)
               </span>
             </SectionHeading>
-            <div className="border border-stone-800 bg-stone-900/50 rounded-lg overflow-hidden max-h-[460px] overflow-y-auto">
+            <div className="border border-dnd-border bg-dnd-card rounded-lg overflow-hidden max-h-[460px] overflow-y-auto dnd-scrollbar">
               {skillList.map((skill, i) => (
                 <div
                   key={skill.name}
-                  className={`flex items-center gap-3 px-4 py-2 ${i < skillList.length - 1 ? 'border-b border-stone-800/40' : ''} ${skill.proficient ? 'bg-amber-950/20' : ''}`}
+                  className={`flex items-center gap-3 px-4 py-2 ${i < skillList.length - 1 ? 'border-b border-dnd-border' : ''} ${skill.proficient ? 'bg-dnd-accent/5' : ''}`}
                 >
                   <span
                     className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${
-                      skill.proficient ? 'bg-amber-600 border-amber-500' : 'border-stone-700'
+                      skill.proficient ? 'bg-dnd-accent border-dnd-accent' : 'border-dnd-border'
                     }`}
                   />
-                  <span className={`flex-1 text-sm ${skill.proficient ? 'text-amber-200 font-medium' : 'text-stone-400'}`}>
+                  <span className={`flex-1 text-sm ${skill.proficient ? 'text-dnd-text font-medium' : 'text-dnd-muted'}`}>
                     {skill.name}
                   </span>
-                  <span className="text-xs text-stone-600 tabular-nums w-8 text-center">
+                  <span className="text-xs text-dnd-muted tabular-nums w-8 text-center">
                     {skill.ability}
                   </span>
                   <span
                     className={`text-sm font-bold tabular-nums w-8 text-right ${
-                      skill.total > 0 ? 'text-green-400' : skill.total < 0 ? 'text-red-400' : 'text-stone-500'
+                      skill.total > 0 ? 'text-green-500' : skill.total < 0 ? 'text-red-400' : 'text-dnd-muted'
                     }`}
                   >
                     {skill.total >= 0 ? '+' : ''}{skill.total}
@@ -267,16 +271,16 @@ export default async function CharacterPage({ params }: { params: { id: string }
 
 function StatBadge({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className={`flex flex-col items-center px-4 py-2.5 rounded-lg border ${highlight ? 'border-amber-700/50 bg-amber-900/20' : 'border-stone-800 bg-stone-900/40'}`}>
-      <span className={`text-xl font-bold ${highlight ? 'text-amber-300' : 'text-amber-100'}`}>{value}</span>
-      <span className="text-xs text-stone-500 mt-0.5 whitespace-nowrap">{label}</span>
+    <div className={`flex flex-col items-center px-4 py-2.5 rounded-lg border ${highlight ? 'border-dnd-accent/40 bg-dnd-accent/10' : 'border-dnd-border bg-dnd-subtle'}`}>
+      <span className={`text-xl font-bold ${highlight ? 'text-dnd-accent' : 'text-dnd-text'}`}>{value}</span>
+      <span className="text-xs text-dnd-muted mt-0.5 whitespace-nowrap">{label}</span>
     </div>
   )
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xs font-semibold text-amber-400/70 uppercase tracking-wider mb-3">
+    <h2 className="text-xs font-semibold text-dnd-muted uppercase tracking-wider mb-3">
       {children}
     </h2>
   )

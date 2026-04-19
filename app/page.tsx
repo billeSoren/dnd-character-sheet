@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import AuthButton from '@/components/AuthButton'
 import CharacterCard from '@/components/CharacterCard'
+import ThemeToggle from '@/components/ThemeToggle'
 import Link from 'next/link'
 import { Character } from '@/types/dnd'
 
@@ -18,17 +19,20 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 parchment-bg">
+    <div className="min-h-screen bg-dnd-bg">
       {/* Header */}
-      <header className="border-b border-amber-900/30 bg-stone-950/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-dnd-border bg-dnd-bg/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚔️</span>
-            <h1 className="text-xl font-bold text-amber-300 tracking-wide">
+            <h1 className="text-xl font-bold text-dnd-accent tracking-wide">
               D&D Karakterark
             </h1>
           </div>
-          <AuthButton user={user} />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <AuthButton user={user} />
+          </div>
         </div>
       </header>
 
@@ -36,17 +40,17 @@ export default async function Home() {
         {!user ? (
           /* Landing — ikke logget ind */
           <div className="text-center py-20">
-            <div className="inline-block mb-6 p-4 rounded-full bg-amber-900/20 border border-amber-800/30">
+            <div className="inline-block mb-6 p-4 rounded-full bg-dnd-accent/20 border border-dnd-accent/30">
               <span className="text-6xl">🐉</span>
             </div>
-            <h2 className="text-4xl font-bold text-amber-200 mb-4">
+            <h2 className="text-4xl font-bold text-dnd-text mb-4">
               Skriv din legende
             </h2>
-            <p className="text-stone-400 text-lg max-w-md mx-auto mb-8 leading-relaxed">
+            <p className="text-dnd-muted text-lg max-w-md mx-auto mb-8 leading-relaxed">
               Opret og administrer dine D&D 5e karakterer. Hold styr på stats, HP og baggrund ét sted.
             </p>
             <div className="flex flex-col items-center gap-3">
-              <p className="text-stone-500 text-sm">Log ind for at komme i gang</p>
+              <p className="text-dnd-muted text-sm">Log ind for at komme i gang</p>
               <AuthButton user={null} />
             </div>
 
@@ -57,13 +61,13 @@ export default async function Home() {
                 { name: 'Lyra Moonwhisper', race: 'Alv', cls: 'Vismand', level: 6 },
                 { name: 'Grok the Mighty', race: 'Halvork', cls: 'Barbar', level: 10 },
               ].map((c) => (
-                <div key={c.name} className="border border-amber-900/40 bg-stone-900/60 rounded-lg p-5">
+                <div key={c.name} className="border border-dnd-border bg-dnd-subtle rounded-lg p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-amber-100">{c.name}</h3>
-                      <p className="text-stone-400 text-sm mt-0.5">{c.race} · <span className="text-amber-400">{c.cls}</span></p>
+                      <h3 className="text-lg font-bold text-dnd-text">{c.name}</h3>
+                      <p className="text-dnd-muted text-sm mt-0.5">{c.race} · <span className="text-dnd-accent">{c.cls}</span></p>
                     </div>
-                    <span className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-amber-700/50 bg-amber-900/30 text-amber-300 font-bold text-sm">
+                    <span className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-dnd-border bg-dnd-accent/20 text-dnd-accent font-bold text-sm">
                       {c.level}
                     </span>
                   </div>
@@ -76,8 +80,8 @@ export default async function Home() {
           <div>
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-amber-200">Dine karakterer</h2>
-                <p className="text-stone-500 text-sm mt-1">
+                <h2 className="text-2xl font-bold text-dnd-text">Dine karakterer</h2>
+                <p className="text-dnd-muted text-sm mt-1">
                   {characters.length === 0
                     ? 'Ingen karakterer endnu'
                     : `${characters.length} karakter${characters.length !== 1 ? 'er' : ''}`}
@@ -85,7 +89,7 @@ export default async function Home() {
               </div>
               <Link
                 href="/characters/new"
-                className="flex items-center gap-2 px-5 py-2.5 bg-amber-700 hover:bg-amber-600 text-stone-100 font-semibold rounded transition-colors shadow-lg shadow-amber-900/30"
+                className="flex items-center gap-2 px-5 py-2.5 bg-dnd-accent hover:opacity-90 text-white font-semibold rounded-lg transition-opacity shadow-lg"
               >
                 <span className="text-lg leading-none">+</span>
                 Opret ny karakter
@@ -93,13 +97,13 @@ export default async function Home() {
             </div>
 
             {characters.length === 0 ? (
-              <div className="text-center py-20 border border-dashed border-amber-900/30 rounded-lg">
+              <div className="text-center py-20 border border-dashed border-dnd-border rounded-lg">
                 <span className="text-5xl block mb-4">📜</span>
-                <p className="text-stone-400 text-lg mb-2">Ingen karakterer endnu</p>
-                <p className="text-stone-600 text-sm mb-6">Opret din første karakter for at begynde eventyret</p>
+                <p className="text-dnd-muted text-lg mb-2">Ingen karakterer endnu</p>
+                <p className="text-dnd-muted text-sm mb-6 opacity-60">Opret din første karakter for at begynde eventyret</p>
                 <Link
                   href="/characters/new"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-700 hover:bg-amber-600 text-stone-100 font-semibold rounded transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-dnd-accent hover:opacity-90 text-white font-semibold rounded-lg transition-opacity"
                 >
                   <span className="text-lg leading-none">+</span>
                   Opret ny karakter
@@ -116,7 +120,7 @@ export default async function Home() {
         )}
       </main>
 
-      <footer className="border-t border-amber-900/20 mt-20 py-6 text-center text-stone-600 text-sm">
+      <footer className="border-t border-dnd-border mt-20 py-6 text-center text-dnd-muted text-sm opacity-60">
         D&D Karakterark · Bygget med Next.js & Supabase
       </footer>
     </div>

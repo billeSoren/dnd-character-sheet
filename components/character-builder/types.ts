@@ -1,22 +1,39 @@
 export type StatKey = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'
+export type AbilityMethod = 'standard' | 'pointbuy' | 'manual'
+
+export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const
+
+export const PB_COST: Record<number, number> = {
+  8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9,
+}
+export const PB_BUDGET = 27
 
 export interface CharacterFormData {
-  name: string
-  race: string
+  // Step 1
   className: string
+  // Step 2
   background: string
-  level: number
+  // Step 3
+  race: string
+  // Step 4
+  abilityMethod: AbilityMethod
   baseStats: Record<StatKey, number>
+  standardArrayAssignments: Record<StatKey, number | null>
+  // Step 5
+  name: string
+  level: number
   selectedSkills: string[]
 }
 
 export const DEFAULT_FORM_DATA: CharacterFormData = {
-  name: '',
-  race: '',
   className: '',
   background: '',
+  race: '',
+  abilityMethod: 'standard',
+  baseStats: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 },
+  standardArrayAssignments: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
+  name: '',
   level: 1,
-  baseStats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
   selectedSkills: [],
 }
 
@@ -51,4 +68,8 @@ export function calculateMaxHP(hitDie: number, conMod: number, level: number): n
   if (level === 1) return Math.max(1, first)
   const avgPerLevel = Math.floor(hitDie / 2) + 1 + conMod
   return Math.max(1, first + (level - 1) * Math.max(1, avgPerLevel))
+}
+
+export function totalPBSpent(stats: Record<StatKey, number>): number {
+  return STAT_KEYS.reduce((sum, k) => sum + (PB_COST[stats[k]] ?? 0), 0)
 }

@@ -6,38 +6,44 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { classes, races, backgrounds } from '@/lib/dnd-data'
 import {
-  CharacterFormData,
-  DEFAULT_FORM_DATA,
-  StatKey,
-  modifier,
-  calculateMaxHP,
+  CharacterFormData, DEFAULT_FORM_DATA, StatKey,
+  modifier, calculateMaxHP, totalPBSpent, PB_BUDGET, STANDARD_ARRAY,
 } from '@/components/character-builder/types'
-import StepIndicator from '@/components/character-builder/StepIndicator'
-import Step1BasicInfo from '@/components/character-builder/Step1BasicInfo'
-import Step2AbilityScores from '@/components/character-builder/Step2AbilityScores'
-import Step3HP from '@/components/character-builder/Step3HP'
-import Step4Skills from '@/components/character-builder/Step4Skills'
-import Step5Summary from '@/components/character-builder/Step5Summary'
+import StepClass from '@/components/character-builder/StepClass'
+import StepBackground from '@/components/character-builder/StepBackground'
+import StepSpecies from '@/components/character-builder/StepSpecies'
+import StepAbilities from '@/components/character-builder/StepAbilities'
+import StepFinish from '@/components/character-builder/StepFinish'
+import ThemeToggle from '@/components/ThemeToggle'
 
-const STEP_LABELS = ['Grundinfo', 'Evner', 'HP', 'Færdigheder', 'Opsummering']
-const TOTAL_STEPS = 5
+// ── Step metadata ─────────────────────────────────────────────────────────────
+
+const TABS = ['CLASS', 'BACKGROUND', 'SPECIES', 'ABILITIES', 'EQUIPMENT'] as const
+const TOTAL_STEPS = TABS.length
+
+// ── Validation ────────────────────────────────────────────────────────────────
 
 function validateStep(step: number, data: CharacterFormData): string | null {
-  if (step === 1) {
-    if (!data.name.trim()) return 'Angiv et navn til din karakter.'
-    if (!data.race) return 'Vælg en race.'
-    if (!data.className) return 'Vælg en klasse.'
-    if (!data.background) return 'Vælg en baggrund.'
-  }
-  if (step === 4) {
-    const cls = classes.find((c) => c.name === data.className)
-    const needed = cls?.skillChoices.choose ?? 0
-    if (data.selectedSkills.length < needed) {
-      return `Vælg ${needed - data.selectedSkills.length} færdighed(er) mere fra din klasse.`
+  switch (step) {
+    case 1: return data.className ? null : 'Vælg en klasse for at fortsætte.'
+    case 2: return data.background ? null : 'Vælg en baggrund for at fortsætte.'
+    case 3: return data.race ? null : 'Vælg en species for at fortsætte.'
+    case 4: {
+      if (data.abilityMethod === 'standard') {
+        const allAssigned = STANDARD_ARRAY.length === 6 &&
+          Object.values(data.standardArrayAssignments).every((v) => v !== null)
+        return allAssigned ? null : 'Tildel alle 6 standardværdier for at fortsætte.'
+      }
+      if (data.abilityMethod === 'pointbuy') {
+        return totalPBSpent(data.baseStats) <= PB_BUDGET ? null : 'Reducer dine evnescores til budgettet.'
+      }
+      return null
     }
+    default: return null
   }
-  return null
 }
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NewCharacterPage() {
   const router = useRouter()
@@ -74,7 +80,13 @@ export default function NewCharacterPage() {
     setStep((s) => Math.max(1, s - 1))
   }
 
+  const jumpTo = (target: number) => {
+    if (target < step) { setStepError(''); setStep(target) }
+  }
+
   const handleSave = async () => {
+    if (!formData.name.trim()) { setSaveError('Angiv et navn til din karakter.'); return }
+
     setSaving(true)
     setSaveError('')
 
@@ -82,7 +94,8 @@ export default function NewCharacterPage() {
     if (!user) { router.push('/login'); return }
 
     const selectedClass = classes.find((c) => c.name === formData.className)
-    const selectedRace = races.find((r) => r.name === formData.race)
+    const selectedRace  = races.find((r) => r.name === formData.race)
+    const selectedBg    = backgrounds.find((b) => b.name === formData.background)
 
     const racialBonus = (stat: StatKey) =>
       selectedRace?.abilityBonuses.find((b) => b.ability === stat)?.bonus ?? 0
@@ -96,18 +109,15 @@ export default function NewCharacterPage() {
       CHA: formData.baseStats.CHA + racialBonus('CHA'),
     }
 
-    const hitDie = selectedClass?.hitDie ?? 8
-    const conMod = modifier(finalStats.CON)
-    const maxHP = calculateMaxHP(hitDie, conMod, formData.level)
-
-    const selectedBg = backgrounds.find((b) => b.name === formData.background)
+    const hitDie  = selectedClass?.hitDie ?? 8
+    const conMod  = modifier(finalStats.CON)
+    const maxHP   = calculateMaxHP(hitDie, conMod, formData.level)
     const allSkills = [
       ...(selectedBg?.skillProficiencies ?? []),
       ...formData.selectedSkills,
     ]
 
-    // Insert character
-    const { data: char, error: charError } = await supabase
+    const { data: char, error: charErr } = await supabase
       .from('characters')
       .insert({
         user_id: user.id,
@@ -121,124 +131,185 @@ export default function NewCharacterPage() {
       .select()
       .single()
 
-    if (charError || !char) {
-      setSaveError(charError?.message ?? 'Kunne ikke gemme karakteren.')
-      setSaving(false)
-      return
-    }
+    if (charErr || !char) { setSaveError(charErr?.message ?? 'Fejl ved oprettelse.'); setSaving(false); return }
 
-    // Insert stats
-    const { error: statsError } = await supabase.from('character_stats').insert({
+    const { error: statsErr } = await supabase.from('character_stats').insert({
       character_id: char.id,
-      strength: finalStats.STR,
-      dexterity: finalStats.DEX,
-      constitution: finalStats.CON,
-      intelligence: finalStats.INT,
-      wisdom: finalStats.WIS,
-      charisma: finalStats.CHA,
+      strength: finalStats.STR, dexterity: finalStats.DEX, constitution: finalStats.CON,
+      intelligence: finalStats.INT, wisdom: finalStats.WIS, charisma: finalStats.CHA,
     })
+    if (statsErr) { setSaveError(statsErr.message); setSaving(false); return }
 
-    if (statsError) {
-      setSaveError(statsError.message)
-      setSaving(false)
-      return
-    }
-
-    // Insert HP
-    const { error: hpError } = await supabase.from('character_hp').insert({
-      character_id: char.id,
-      max_hp: maxHP,
-      current_hp: maxHP,
-      temp_hp: 0,
+    const { error: hpErr } = await supabase.from('character_hp').insert({
+      character_id: char.id, max_hp: maxHP, current_hp: maxHP, temp_hp: 0,
     })
-
-    if (hpError) {
-      setSaveError(hpError.message)
-      setSaving(false)
-      return
-    }
+    if (hpErr) { setSaveError(hpErr.message); setSaving(false); return }
 
     router.push('/')
   }
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
-        <div className="text-stone-500 text-sm">Indlæser…</div>
+      <div className="min-h-screen bg-dnd-bg flex items-center justify-center">
+        <div className="text-dnd-muted text-sm animate-pulse">Indlæser…</div>
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-stone-950">
-      {/* Header */}
-      <header className="border-b border-amber-900/30 bg-stone-950/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-amber-300 hover:text-amber-200 transition-colors">
-            <span className="text-xl">⚔️</span>
-            <span className="font-bold tracking-wide">D&D Karakterark</span>
-          </Link>
-          <span className="text-stone-500 text-sm">Trin {step} af {TOTAL_STEPS}</span>
-        </div>
-      </header>
+  const stepLabel = formData.className || formData.background || formData.race
+    ? [formData.className, formData.background, formData.race].filter(Boolean).join(' · ')
+    : 'Ny karakter'
 
-      <main className="max-w-2xl mx-auto px-4 py-10">
-        <StepIndicator currentStep={step} totalSteps={TOTAL_STEPS} labels={STEP_LABELS} />
+  return (
+    <div className="min-h-screen bg-dnd-bg relative">
+
+      {/* ── Decorative side panels (lg+) ──────────────────────────────────── */}
+      <div
+        className="hidden lg:block fixed left-0 top-0 bottom-0 pointer-events-none"
+        style={{ width: 'calc(50% - 380px)' }}
+      >
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(135deg, var(--dnd-bg) 0%, color-mix(in srgb, var(--dnd-bg) 85%, var(--dnd-accent)) 50%, var(--dnd-bg) 100%)',
+        }} />
+        <div className="absolute right-0 top-0 bottom-0 w-px opacity-30"
+          style={{ background: 'linear-gradient(to bottom, transparent, var(--dnd-accent), transparent)' }} />
+        {/* Fantasy rune decoration */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-5 text-9xl select-none">
+          ⚔️
+        </div>
+      </div>
+      <div
+        className="hidden lg:block fixed right-0 top-0 bottom-0 pointer-events-none"
+        style={{ width: 'calc(50% - 380px)' }}
+      >
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(225deg, var(--dnd-bg) 0%, color-mix(in srgb, var(--dnd-bg) 85%, var(--dnd-accent)) 50%, var(--dnd-bg) 100%)',
+        }} />
+        <div className="absolute left-0 top-0 bottom-0 w-px opacity-30"
+          style={{ background: 'linear-gradient(to bottom, transparent, var(--dnd-accent), transparent)' }} />
+        <div className="absolute inset-0 flex items-center justify-center opacity-5 text-9xl select-none">
+          🐉
+        </div>
+      </div>
+
+      {/* ── Center column ─────────────────────────────────────────────────── */}
+      <div
+        className="relative mx-auto min-h-screen flex flex-col shadow-2xl"
+        style={{ maxWidth: '760px', background: 'var(--dnd-card)' }}
+      >
+        {/* Header */}
+        <header className="flex items-center justify-between px-5 py-3.5 border-b border-dnd-border flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2 text-dnd-muted hover:text-dnd-accent transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-sm font-medium">Tilbage</span>
+          </Link>
+          <span className="text-dnd-muted text-xs truncate max-w-[200px]">{stepLabel}</span>
+          <ThemeToggle />
+        </header>
+
+        {/* Tab navigation */}
+        <nav className="flex border-b border-dnd-border flex-shrink-0 overflow-x-auto">
+          {TABS.map((tab, i) => {
+            const tabStep = i + 1
+            const isActive    = step === tabStep
+            const isCompleted = step > tabStep
+            const isClickable = isCompleted
+
+            return (
+              <button
+                key={tab}
+                onClick={() => isClickable && jumpTo(tabStep)}
+                disabled={!isClickable && !isActive}
+                className={`flex-1 min-w-[80px] flex flex-col items-center gap-1 py-3 px-2 text-xs font-bold tracking-widest uppercase transition-colors border-b-2 ${
+                  isActive
+                    ? 'border-b-dnd-accent text-dnd-accent'
+                    : isCompleted
+                    ? 'border-b-transparent text-green-500 hover:text-dnd-accent cursor-pointer'
+                    : 'border-b-transparent text-dnd-muted cursor-default'
+                }`}
+              >
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  isActive
+                    ? 'bg-dnd-accent text-white'
+                    : isCompleted
+                    ? 'bg-green-500 text-white'
+                    : 'bg-dnd-border text-dnd-muted'
+                }`}>
+                  {isCompleted ? '✓' : tabStep}
+                </span>
+                <span className="hidden sm:block">{tab}</span>
+              </button>
+            )
+          })}
+        </nav>
 
         {/* Step content */}
-        <div className="relative border border-amber-900/30 bg-stone-900/40 rounded-lg p-6 sm:p-8">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-700/40 to-transparent rounded-t-lg" />
-
-          {step === 1 && <Step1BasicInfo data={formData} onChange={updateForm} />}
-          {step === 2 && <Step2AbilityScores data={formData} onChange={updateForm} />}
-          {step === 3 && <Step3HP data={formData} />}
-          {step === 4 && <Step4Skills data={formData} onChange={updateForm} />}
+        <div className="flex-1 px-5 py-6 overflow-y-auto dnd-scrollbar">
+          {step === 1 && <StepClass       data={formData} onChange={updateForm} />}
+          {step === 2 && <StepBackground  data={formData} onChange={updateForm} />}
+          {step === 3 && <StepSpecies     data={formData} onChange={updateForm} />}
+          {step === 4 && <StepAbilities   data={formData} onChange={updateForm} />}
           {step === 5 && (
-            <Step5Summary
+            <StepFinish
               data={formData}
+              onChange={updateForm}
               onSave={handleSave}
               saving={saving}
               error={saveError}
             />
           )}
 
-          {/* Step error */}
           {stepError && (
-            <p className="mt-4 text-red-400 text-sm bg-red-900/20 border border-red-900/40 rounded px-3 py-2">
+            <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
               {stepError}
-            </p>
+            </div>
           )}
         </div>
 
-        {/* Navigation */}
+        {/* Footer navigation */}
         {step < TOTAL_STEPS && (
-          <div className="flex justify-between mt-6">
+          <footer className="flex items-center justify-between px-5 py-4 border-t border-dnd-border flex-shrink-0">
             <button
               onClick={goBack}
               disabled={step === 1}
-              className="px-5 py-2.5 border border-stone-700 text-stone-400 hover:text-stone-200 hover:border-stone-600 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
+              className="flex items-center gap-2 px-4 py-2 border border-dnd-border text-dnd-muted hover:text-dnd-text hover:border-dnd-text disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
             >
-              ← Tilbage
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Tilbage
             </button>
+            <span className="text-dnd-muted text-xs">{step} / {TOTAL_STEPS}</span>
             <button
               onClick={goNext}
-              className="px-6 py-2.5 bg-amber-700 hover:bg-amber-600 text-stone-100 font-semibold rounded transition-colors"
+              className="flex items-center gap-2 px-5 py-2 bg-dnd-accent hover:opacity-90 text-white font-semibold rounded-lg text-sm transition-opacity"
             >
-              Næste →
+              Næste
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
-          </div>
+          </footer>
         )}
         {step === TOTAL_STEPS && (
-          <div className="flex justify-start mt-6">
+          <footer className="flex items-center px-5 py-4 border-t border-dnd-border flex-shrink-0">
             <button
               onClick={goBack}
-              className="px-5 py-2.5 border border-stone-700 text-stone-400 hover:text-stone-200 hover:border-stone-600 rounded transition-colors"
+              className="flex items-center gap-2 px-4 py-2 border border-dnd-border text-dnd-muted hover:text-dnd-text hover:border-dnd-text rounded-lg text-sm font-medium transition-colors"
             >
-              ← Tilbage
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Tilbage
             </button>
-          </div>
+          </footer>
         )}
-      </main>
+      </div>
     </div>
   )
 }

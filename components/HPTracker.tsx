@@ -51,25 +51,25 @@ export default function HPTracker({ characterId, maxHp, initialCurrentHp, initia
   const isDead = currentHp === 0
 
   return (
-    <div className="border border-stone-800 bg-stone-900/50 rounded-lg p-5 space-y-4">
+    <div className="border border-dnd-border bg-dnd-subtle rounded-lg p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-amber-400/70 uppercase tracking-wider">Hit Points</h3>
-        {saving && <span className="text-xs text-stone-600 animate-pulse">gemmer…</span>}
+        <h3 className="text-xs font-semibold text-dnd-muted uppercase tracking-wider">Hit Points</h3>
+        {saving && <span className="text-xs text-dnd-muted animate-pulse">gemmer…</span>}
       </div>
 
       {/* HP fraction */}
       <div className="text-center">
         <div className="flex items-end justify-center gap-1">
-          <span className={`text-5xl font-bold leading-none ${isDead ? 'text-red-500' : 'text-amber-100'}`}>
+          <span className={`text-5xl font-bold leading-none ${isDead ? 'text-red-500' : 'text-dnd-text'}`}>
             {currentHp}
           </span>
-          <span className="text-stone-500 text-xl mb-1">/ {maxHp}</span>
+          <span className="text-dnd-muted text-xl mb-1">/ {maxHp}</span>
         </div>
         {isDead && <p className="text-red-500 text-xs mt-1 font-medium">Bevidstløs</p>}
       </div>
 
       {/* HP bar */}
-      <div className="h-2.5 bg-stone-800 rounded-full overflow-hidden">
+      <div className="h-2.5 bg-dnd-border rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${hpColor}`}
           style={{ width: `${pct}%` }}
@@ -85,8 +85,8 @@ export default function HPTracker({ characterId, maxHp, initialCurrentHp, initia
             disabled={saving || (delta < 0 && currentHp === 0) || (delta > 0 && currentHp === maxHp)}
             className={`py-2 rounded text-sm font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
               delta < 0
-                ? 'bg-red-900/50 hover:bg-red-900/70 border border-red-900/50 text-red-300'
-                : 'bg-green-900/40 hover:bg-green-900/60 border border-green-900/40 text-green-300'
+                ? 'bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400'
+                : 'bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400'
             }`}
           >
             {delta > 0 ? `+${delta}` : delta}
@@ -101,8 +101,8 @@ export default function HPTracker({ characterId, maxHp, initialCurrentHp, initia
       </div>
 
       {/* Temp HP */}
-      <div className="border-t border-stone-800 pt-3 flex items-center justify-between">
-        <span className="text-sm text-stone-500">Midlertidige HP</span>
+      <div className="border-t border-dnd-border pt-3 flex items-center justify-between">
+        <span className="text-sm text-dnd-muted">Midlertidige HP</span>
         {editingTemp ? (
           <div className="flex items-center gap-1">
             <input
@@ -112,16 +112,16 @@ export default function HPTracker({ characterId, maxHp, initialCurrentHp, initia
               onChange={(e) => setTempInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && commitTemp()}
               autoFocus
-              className="w-16 px-2 py-1 bg-stone-800 border border-amber-600 rounded text-stone-100 text-sm text-center outline-none"
+              className="w-16 px-2 py-1 bg-dnd-subtle border border-dnd-accent rounded text-dnd-text text-sm text-center outline-none"
             />
-            <button onClick={commitTemp} className="px-2 py-1 bg-amber-700 hover:bg-amber-600 text-stone-100 rounded text-sm">✓</button>
+            <button onClick={commitTemp} className="px-2 py-1 bg-dnd-accent hover:opacity-90 text-white rounded text-sm">✓</button>
           </div>
         ) : (
           <button
             onClick={() => { setTempInput(String(tempHp)); setEditingTemp(true) }}
-            className="text-amber-300 font-bold text-sm hover:text-amber-200 transition-colors"
+            className="text-dnd-accent font-bold text-sm hover:opacity-80 transition-opacity"
           >
-            {tempHp > 0 ? `+${tempHp}` : '—'} <span className="text-stone-600 font-normal text-xs">klik for at redigere</span>
+            {tempHp > 0 ? `+${tempHp}` : '—'} <span className="text-dnd-muted font-normal text-xs">klik for at redigere</span>
           </button>
         )}
       </div>
@@ -153,8 +153,8 @@ function HPCustomButton({
         onChange={(e) => setVal(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && commit()}
         placeholder="0"
-        className={`w-0 flex-1 px-2 py-1.5 bg-stone-800 border rounded text-stone-100 text-sm text-center outline-none transition-colors ${
-          negative ? 'border-red-900/50 focus:border-red-600' : 'border-green-900/40 focus:border-green-600'
+        className={`w-0 flex-1 px-2 py-1.5 bg-dnd-subtle border rounded text-dnd-text text-sm text-center outline-none transition-colors ${
+          negative ? 'border-red-500/30 focus:border-red-500' : 'border-green-500/30 focus:border-green-500'
         }`}
       />
       <button
@@ -162,8 +162,8 @@ function HPCustomButton({
         disabled={disabled || !val || parseInt(val) <= 0}
         className={`px-3 py-1.5 rounded text-sm font-semibold transition-colors disabled:opacity-30 ${
           negative
-            ? 'bg-red-900/50 hover:bg-red-900/70 border border-red-900/50 text-red-300'
-            : 'bg-green-900/40 hover:bg-green-900/60 border border-green-900/40 text-green-300'
+            ? 'bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400'
+            : 'bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400'
         }`}
       >
         {label}

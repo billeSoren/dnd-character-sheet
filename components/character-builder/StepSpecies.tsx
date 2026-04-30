@@ -8,15 +8,15 @@ const RACE_ICONS: Record<string, string> = {
 }
 
 const RACE_DESCRIPTIONS: Record<string, string> = {
-  Dwarf: 'Hårdføre og udholdende dværge er ekspertshåndværkere og barske krigere fra bjergets fæstninger.',
-  Elf: 'Yndefulde og langlivede alver er naturlige tryllekunstnere med skarpe sanser og uendelig nysgerrighed.',
-  Halfling: 'Små og smidige halvlinge er bemærkelsesværdigt heldige, modige og dygtige til at undgå fare.',
-  Human: 'Ambitiøse og tilpasningsdygtige mennesker er den mest udbredte race med talent for alt.',
-  Dragonborn: 'Stolte og ærefulde krigere der bærer træk og kræfter fra drakekind.',
-  Gnome: 'Entusiastiske og opfindsomme gnomd er naturlige mekanikere med kærlighed til magi og gåder.',
-  'Half-Elf': 'Kombinerer det bedste fra begge verdener — karismatiske og alsidige eventyrer.',
-  'Half-Orc': 'Stærke og frygtløse halvork har en ubønhørlig drive og orkenes vildhed.',
-  Tiefling: 'Præget af djævlisk arv — modstandsdygtige overlevere med medfødte magiske gaver.',
+  Dwarf: 'Hardy and enduring dwarves are expert craftspeople and fierce warriors from mountain strongholds.',
+  Elf: 'Graceful and long-lived elves are natural spellcasters with keen senses and endless curiosity.',
+  Halfling: 'Small and nimble halflings are remarkably lucky, courageous, and skilled at avoiding danger.',
+  Human: 'Ambitious and adaptable humans are the most widespread race, with talent for everything.',
+  Dragonborn: 'Proud and honourable warriors bearing the traits and powers of dragonkind.',
+  Gnome: 'Enthusiastic and inventive gnomes are natural tinkerers with a love of magic and puzzles.',
+  'Half-Elf': 'Combines the best of both worlds — charismatic and versatile adventurers.',
+  'Half-Orc': 'Strong and fearless half-orcs have an unstoppable drive and the ferocity of orcs.',
+  Tiefling: 'Marked by infernal heritage — resilient survivors with innate magical gifts.',
 }
 
 interface Props {
@@ -31,13 +31,13 @@ export default function StepSpecies({ data, onChange }: Props) {
     icon: RACE_ICONS[r.name],
     shortDesc: RACE_DESCRIPTIONS[r.name] ?? '',
     details: [
-      { label: 'Størrelse', value: r.size },
-      { label: 'Hastighed', value: `${r.speed} ft` },
+      { label: 'Size', value: r.size },
+      { label: 'Speed', value: `${r.speed} ft` },
       ...(r.abilityBonuses.length > 0
-        ? [{ label: 'Evnebonuser', value: r.abilityBonuses.map((b) => `${b.ability} +${b.bonus}`).join(', ') }]
+        ? [{ label: 'Ability Bonuses', value: r.abilityBonuses.map((b) => `${b.ability} +${b.bonus}`).join(', ') }]
         : []),
       ...(r.traits.length > 0
-        ? [{ label: 'Træk', value: r.traits.slice(0, 4).join(', ') + (r.traits.length > 4 ? '…' : '') }]
+        ? [{ label: 'Traits', value: r.traits.slice(0, 4).join(', ') + (r.traits.length > 4 ? '…' : '') }]
         : []),
     ],
   }))
@@ -45,14 +45,14 @@ export default function StepSpecies({ data, onChange }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-dnd-text mb-1">Vælg species</h2>
-        <p className="text-dnd-muted text-sm">Din species giver din karakter unikke evnebonuser og raciale træk.</p>
+        <h2 className="text-xl font-bold text-dnd-text mb-1">Choose a Species</h2>
+        <p className="text-dnd-muted text-sm">Your species grants your character unique ability bonuses and racial traits.</p>
       </div>
       <SelectionList
         items={items}
         selected={data.race}
         onSelect={(name) => onChange({ race: name })}
-        placeholder="Søg species…"
+        placeholder="Search species…"
       />
     </div>
   )

@@ -22,12 +22,12 @@ function modStr(score: number) {
 }
 
 const STAT_META: { key: StatKey; label: string; abbr: string }[] = [
-  { key: 'STR', label: 'Styrke',      abbr: 'STR' },
-  { key: 'DEX', label: 'Smidighed',   abbr: 'DEX' },
-  { key: 'CON', label: 'Udholdenhed', abbr: 'CON' },
-  { key: 'INT', label: 'Intelligens', abbr: 'INT' },
-  { key: 'WIS', label: 'Visdom',      abbr: 'WIS' },
-  { key: 'CHA', label: 'Karisma',     abbr: 'CHA' },
+  { key: 'STR', label: 'Strength',     abbr: 'STR' },
+  { key: 'DEX', label: 'Dexterity',    abbr: 'DEX' },
+  { key: 'CON', label: 'Constitution', abbr: 'CON' },
+  { key: 'INT', label: 'Intelligence', abbr: 'INT' },
+  { key: 'WIS', label: 'Wisdom',       abbr: 'WIS' },
+  { key: 'CHA', label: 'Charisma',     abbr: 'CHA' },
 ]
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -108,12 +108,12 @@ export default async function CharacterPage({ params }: { params: { id: string }
       <header className="border-b border-dnd-border bg-dnd-bg/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4">
           <Link href="/" className="text-dnd-muted hover:text-dnd-accent transition-colors text-sm">
-            ← Tilbage
+            ← Back
           </Link>
           <div className="h-4 w-px bg-dnd-border" />
           <span className="text-dnd-accent font-bold">{character.name}</span>
           <span className="text-dnd-muted text-sm hidden sm:block">
-            {character.race} · {character.class} · Niveau {character.level}
+            {character.race} · {character.class} · Level {character.level}
           </span>
           <div className="ml-auto">
             <ThemeToggle />
@@ -135,20 +135,20 @@ export default async function CharacterPage({ params }: { params: { id: string }
                 {character.race} · <span className="text-dnd-accent">{character.class}</span>
                 {raceData && <span className="text-dnd-muted text-sm"> · {raceData.size}, {raceData.speed} ft</span>}
               </p>
-              <p className="text-dnd-muted text-sm mt-1 opacity-70">Baggrund: {character.background}</p>
+              <p className="text-dnd-muted text-sm mt-1 opacity-70">Background: {character.background}</p>
             </div>
 
             <div className="flex gap-3 flex-wrap">
-              <StatBadge label="Niveau" value={String(character.level)} />
-              <StatBadge label="Proficiency" value={`+${profBonus}`} highlight />
-              <StatBadge label="Passiv perception" value={String(passivePerception)} />
+              <StatBadge label="Level" value={String(character.level)} />
+              <StatBadge label="Proficiency Bonus" value={`+${profBonus}`} highlight />
+              <StatBadge label="Passive Perception" value={String(passivePerception)} />
             </div>
           </div>
         </div>
 
         {/* ── Ability scores ────────────────────────────────────────────────── */}
         <section>
-          <SectionHeading>Evnescores</SectionHeading>
+          <SectionHeading>Ability Scores</SectionHeading>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {STAT_META.map(({ key, abbr, label }) => {
               const score = statScores[key]
@@ -219,7 +219,7 @@ export default async function CharacterPage({ params }: { params: { id: string }
             </div>
             {classData && (
               <p className="text-xs text-dnd-muted mt-2 px-1 opacity-70">
-                {character.class} er proficient i {classData.savingThrows.join(' og ')} saving throws
+                {character.class} is proficient in {classData.savingThrows.join(' and ')} saving throws
               </p>
             )}
           </div>
@@ -227,7 +227,7 @@ export default async function CharacterPage({ params }: { params: { id: string }
           {/* Skills */}
           <div>
             <SectionHeading>
-              Færdigheder
+              Skills
               <span className="ml-2 text-dnd-accent font-normal">
                 ({skillList.filter((s) => s.proficient).length} proficient)
               </span>

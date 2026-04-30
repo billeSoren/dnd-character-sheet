@@ -22,7 +22,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError('Forkert email eller adgangskode.')
+      setError('Incorrect email or password.')
       setLoading(false)
       return
     }
@@ -42,16 +42,16 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 text-dnd-accent hover:opacity-80 transition-opacity">
             <span className="text-3xl">⚔️</span>
-            <span className="text-xl font-bold tracking-wide">D&D Karakterark</span>
+            <span className="text-xl font-bold tracking-wide">D&D Character Sheet</span>
           </Link>
         </div>
 
-        {/* Kort */}
+        {/* Card */}
         <div className="relative border border-dnd-border bg-dnd-card rounded-lg p-8">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-dnd-accent/50 to-transparent rounded-t-lg" />
 
-          <h1 className="text-2xl font-bold text-dnd-text mb-1">Velkommen tilbage</h1>
-          <p className="text-dnd-muted text-sm mb-6">Log ind for at fortsætte dit eventyr</p>
+          <h1 className="text-2xl font-bold text-dnd-text mb-1">Welcome Back</h1>
+          <p className="text-dnd-muted text-sm mb-6">Log in to continue your adventure</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -66,13 +66,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-2.5 bg-dnd-subtle border border-dnd-border focus:border-dnd-accent rounded-lg text-dnd-text placeholder:text-dnd-muted outline-none transition-colors text-sm"
-                placeholder="din@email.dk"
+                placeholder="your@email.com"
               />
             </div>
 
             <div>
               <label className="block text-sm text-dnd-muted mb-1.5 font-medium" htmlFor="password">
-                Adgangskode
+                Password
               </label>
               <input
                 id="password"
@@ -97,14 +97,14 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-2.5 bg-dnd-accent hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-opacity mt-2"
             >
-              {loading ? 'Logger ind…' : 'Log ind'}
+              {loading ? 'Logging in…' : 'Log in'}
             </button>
           </form>
 
           <p className="text-center text-dnd-muted text-sm mt-6">
-            Ingen konto?{' '}
+            No account?{' '}
             <Link href="/register" className="text-dnd-accent hover:opacity-80 transition-opacity font-medium">
-              Opret en her
+              Create one here
             </Link>
           </p>
         </div>

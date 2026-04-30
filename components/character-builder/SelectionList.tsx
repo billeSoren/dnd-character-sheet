@@ -17,7 +17,7 @@ interface SelectionListProps {
   placeholder?: string
 }
 
-export default function SelectionList({ items, selected, onSelect, placeholder = 'Søg…' }: SelectionListProps) {
+export default function SelectionList({ items, selected, onSelect, placeholder = 'Search…' }: SelectionListProps) {
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string | null>(selected || null)
 
@@ -50,7 +50,7 @@ export default function SelectionList({ items, selected, onSelect, placeholder =
       <div className="border border-dnd-border rounded-lg overflow-hidden">
         {filtered.length === 0 ? (
           <div className="py-10 text-center text-dnd-muted text-sm">
-            Ingen resultater for &ldquo;{search}&rdquo;
+            No results for &ldquo;{search}&rdquo;
           </div>
         ) : (
           filtered.map((item, idx) => {

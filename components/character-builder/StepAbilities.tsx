@@ -15,7 +15,7 @@ interface Props {
 const METHOD_LABELS: Record<AbilityMethod, string> = {
   standard: 'Standard Array',
   pointbuy: 'Point Buy',
-  manual: 'Manuelt / Rul',
+  manual: 'Manual / Roll',
 }
 
 export default function StepAbilities({ data, onChange }: Props) {
@@ -43,8 +43,8 @@ export default function StepAbilities({ data, onChange }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-dnd-text mb-1">Evnescores</h2>
-        <p className="text-dnd-muted text-sm">Fordel dine grundlæggende evnescores.</p>
+        <h2 className="text-xl font-bold text-dnd-text mb-1">Ability Scores</h2>
+        <p className="text-dnd-muted text-sm">Assign your base ability scores.</p>
       </div>
 
       {/* Method tabs */}
@@ -99,7 +99,7 @@ function StandardArrayMethod({ data, onChange, racialBonus, totalScore }: {
     <div>
       {/* Pool */}
       <div className="mb-5 p-4 bg-dnd-subtle border border-dnd-border rounded-lg">
-        <p className="text-xs text-dnd-muted mb-2 font-semibold uppercase tracking-wider">Tilgængelige værdier</p>
+        <p className="text-xs text-dnd-muted mb-2 font-semibold uppercase tracking-wider">Available Values</p>
         <div className="flex gap-2 flex-wrap">
           {STANDARD_ARRAY.map((val) => (
             <span
@@ -128,7 +128,7 @@ function StandardArrayMethod({ data, onChange, racialBonus, totalScore }: {
 
           return (
             <div key={stat} className="flex items-center gap-4 p-3 bg-dnd-subtle border border-dnd-border rounded-lg">
-              <div className="w-20 flex-shrink-0">
+              <div className="w-28 flex-shrink-0">
                 <p className="font-bold text-sm text-dnd-text uppercase">{stat}</p>
                 <p className="text-xs text-dnd-muted">{STAT_LABELS[stat]}</p>
               </div>
@@ -138,7 +138,7 @@ function StandardArrayMethod({ data, onChange, racialBonus, totalScore }: {
                 onChange={(e) => assign(stat, e.target.value ? Number(e.target.value) : null)}
                 className="flex-1 px-3 py-2 bg-dnd-card border border-dnd-border rounded text-dnd-text text-sm outline-none focus:border-dnd-accent"
               >
-                <option value="">— vælg —</option>
+                <option value="">— choose —</option>
                 {availableOptions.map((v) => (
                   <option key={v} value={v}>{v}</option>
                 ))}
@@ -162,7 +162,7 @@ function StandardArrayMethod({ data, onChange, racialBonus, totalScore }: {
 
       {!allAssigned && (
         <p className="text-xs text-dnd-muted mt-3">
-          Tildel alle 6 værdier for at fortsætte.
+          Assign all 6 values to continue.
         </p>
       )}
     </div>
@@ -194,7 +194,7 @@ function PointBuyMethod({ data, onChange, racialBonus, totalScore }: {
       {/* Budget bar */}
       <div className="mb-5 p-4 bg-dnd-subtle border border-dnd-border rounded-lg">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-dnd-muted font-semibold uppercase tracking-wider">Point budget</p>
+          <p className="text-xs text-dnd-muted font-semibold uppercase tracking-wider">Point Budget</p>
           <span className={`text-lg font-bold ${remaining < 5 ? 'text-orange-400' : 'text-dnd-accent'}`}>
             {remaining} <span className="text-dnd-muted text-sm font-normal">/ {PB_BUDGET}</span>
           </span>
@@ -219,7 +219,7 @@ function PointBuyMethod({ data, onChange, racialBonus, totalScore }: {
 
           return (
             <div key={stat} className="flex items-center gap-3 p-3 bg-dnd-subtle border border-dnd-border rounded-lg">
-              <div className="w-20 flex-shrink-0">
+              <div className="w-28 flex-shrink-0">
                 <p className="font-bold text-sm text-dnd-text uppercase">{stat}</p>
                 <p className="text-xs text-dnd-muted">{STAT_LABELS[stat]}</p>
               </div>
@@ -242,7 +242,7 @@ function PointBuyMethod({ data, onChange, racialBonus, totalScore }: {
                 </button>
               </div>
 
-              <span className="text-xs text-dnd-muted flex-shrink-0">koster {cost}pt</span>
+              <span className="text-xs text-dnd-muted flex-shrink-0">costs {cost}pt</span>
 
               <div className="ml-auto text-right flex-shrink-0">
                 {bonus !== 0 && <span className="text-xs text-dnd-accent mr-1">+{bonus}</span>}
@@ -257,7 +257,7 @@ function PointBuyMethod({ data, onChange, racialBonus, totalScore }: {
       </div>
 
       <div className="mt-3 text-xs text-dnd-muted">
-        <span className="font-semibold">Omkostningstabel:</span> 8=0, 9=1, 10=2, 11=3, 12=4, 13=5, 14=7, 15=9
+        <span className="font-semibold">Cost table:</span> 8=0, 9=1, 10=2, 11=3, 12=4, 13=5, 14=7, 15=9
       </div>
     </div>
   )
@@ -290,7 +290,7 @@ function ManualMethod({ data, onChange, racialBonus, totalScore }: {
           onClick={rollAll}
           className="flex items-center gap-2 px-4 py-2 bg-dnd-accent/20 hover:bg-dnd-accent/30 border border-dnd-accent/40 text-dnd-accent rounded-lg text-sm font-semibold transition-colors"
         >
-          🎲 Rul alle (4d6 drop lowest)
+          🎲 Roll all (4d6 drop lowest)
         </button>
       </div>
 
@@ -303,7 +303,7 @@ function ManualMethod({ data, onChange, racialBonus, totalScore }: {
 
           return (
             <div key={stat} className="flex items-center gap-3 p-3 bg-dnd-subtle border border-dnd-border rounded-lg">
-              <div className="w-20 flex-shrink-0">
+              <div className="w-28 flex-shrink-0">
                 <p className="font-bold text-sm text-dnd-text uppercase">{stat}</p>
                 <p className="text-xs text-dnd-muted">{STAT_LABELS[stat]}</p>
               </div>
@@ -319,7 +319,7 @@ function ManualMethod({ data, onChange, racialBonus, totalScore }: {
                 />
                 <button
                   onClick={() => rollOne(stat)}
-                  title="Rul 4d6 drop lowest"
+                  title="Roll 4d6 drop lowest"
                   className="px-2.5 py-1.5 bg-dnd-accent/20 hover:bg-dnd-accent/30 border border-dnd-accent/40 text-dnd-accent rounded text-sm transition-colors"
                 >
                   🎲

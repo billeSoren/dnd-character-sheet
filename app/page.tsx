@@ -26,7 +26,7 @@ export default async function Home() {
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚔️</span>
             <h1 className="text-xl font-bold text-dnd-accent tracking-wide">
-              D&D Karakterark
+              D&D Character Sheet
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -38,28 +38,28 @@ export default async function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-12">
         {!user ? (
-          /* Landing — ikke logget ind */
+          /* Landing — not logged in */
           <div className="text-center py-20">
             <div className="inline-block mb-6 p-4 rounded-full bg-dnd-accent/20 border border-dnd-accent/30">
               <span className="text-6xl">🐉</span>
             </div>
             <h2 className="text-4xl font-bold text-dnd-text mb-4">
-              Skriv din legende
+              Write Your Legend
             </h2>
             <p className="text-dnd-muted text-lg max-w-md mx-auto mb-8 leading-relaxed">
-              Opret og administrer dine D&D 5e karakterer. Hold styr på stats, HP og baggrund ét sted.
+              Create and manage your D&D 5e characters. Track stats, HP, and background all in one place.
             </p>
             <div className="flex flex-col items-center gap-3">
-              <p className="text-dnd-muted text-sm">Log ind for at komme i gang</p>
+              <p className="text-dnd-muted text-sm">Log in to get started</p>
               <AuthButton user={null} />
             </div>
 
-            {/* Dekorative eksempelkort */}
+            {/* Decorative example cards */}
             <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-4 opacity-40 pointer-events-none select-none">
               {[
-                { name: 'Thorin Stonehelm', race: 'Dværg', cls: 'Kriger', level: 8 },
-                { name: 'Lyra Moonwhisper', race: 'Alv', cls: 'Vismand', level: 6 },
-                { name: 'Grok the Mighty', race: 'Halvork', cls: 'Barbar', level: 10 },
+                { name: 'Thorin Stonehelm', race: 'Dwarf', cls: 'Fighter', level: 8 },
+                { name: 'Lyra Moonwhisper', race: 'Elf', cls: 'Wizard', level: 6 },
+                { name: 'Grok the Mighty', race: 'Half-Orc', cls: 'Barbarian', level: 10 },
               ].map((c) => (
                 <div key={c.name} className="border border-dnd-border bg-dnd-subtle rounded-lg p-5">
                   <div className="flex items-start justify-between">
@@ -76,15 +76,15 @@ export default async function Home() {
             </div>
           </div>
         ) : (
-          /* Dashboard — logget ind */
+          /* Dashboard — logged in */
           <div>
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-dnd-text">Dine karakterer</h2>
+                <h2 className="text-2xl font-bold text-dnd-text">Your Characters</h2>
                 <p className="text-dnd-muted text-sm mt-1">
                   {characters.length === 0
-                    ? 'Ingen karakterer endnu'
-                    : `${characters.length} karakter${characters.length !== 1 ? 'er' : ''}`}
+                    ? 'No characters yet'
+                    : `${characters.length} character${characters.length !== 1 ? 's' : ''}`}
                 </p>
               </div>
               <Link
@@ -92,21 +92,21 @@ export default async function Home() {
                 className="flex items-center gap-2 px-5 py-2.5 bg-dnd-accent hover:opacity-90 text-white font-semibold rounded-lg transition-opacity shadow-lg"
               >
                 <span className="text-lg leading-none">+</span>
-                Opret ny karakter
+                Create New Character
               </Link>
             </div>
 
             {characters.length === 0 ? (
               <div className="text-center py-20 border border-dashed border-dnd-border rounded-lg">
                 <span className="text-5xl block mb-4">📜</span>
-                <p className="text-dnd-muted text-lg mb-2">Ingen karakterer endnu</p>
-                <p className="text-dnd-muted text-sm mb-6 opacity-60">Opret din første karakter for at begynde eventyret</p>
+                <p className="text-dnd-muted text-lg mb-2">No characters yet</p>
+                <p className="text-dnd-muted text-sm mb-6 opacity-60">Create your first character to begin the adventure</p>
                 <Link
                   href="/characters/new"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-dnd-accent hover:opacity-90 text-white font-semibold rounded-lg transition-opacity"
                 >
                   <span className="text-lg leading-none">+</span>
-                  Opret ny karakter
+                  Create New Character
                 </Link>
               </div>
             ) : (
@@ -121,7 +121,7 @@ export default async function Home() {
       </main>
 
       <footer className="border-t border-dnd-border mt-20 py-6 text-center text-dnd-muted text-sm opacity-60">
-        D&D Karakterark · Bygget med Next.js & Supabase
+        D&D Character Sheet · Built with Next.js & Supabase
       </footer>
     </div>
   )

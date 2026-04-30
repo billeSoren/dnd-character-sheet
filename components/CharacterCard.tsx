@@ -40,7 +40,7 @@ export default function CharacterCard({ character }: CharacterCardProps) {
             <span className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-dnd-border bg-dnd-accent/20 text-dnd-accent font-bold text-sm">
               {character.level}
             </span>
-            <p className="text-dnd-muted text-xs mt-1">niveau</p>
+            <p className="text-dnd-muted text-xs mt-1">level</p>
           </div>
         </div>
         <p className="text-dnd-muted text-xs mt-3 border-t border-dnd-border pt-3 opacity-70">

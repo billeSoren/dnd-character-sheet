@@ -9,19 +9,19 @@ const BG_ICONS: Record<string, string> = {
 }
 
 const BG_DESCRIPTIONS: Record<string, string> = {
-  Acolyte: 'Du brugte dine formative år i tjeneste for et tempel og lærte hellige ritualer og lære.',
-  Charlatan: 'Du har altid haft en talent for at overbevise folk om, at du er en du ikke er.',
-  Criminal: 'Du levede på den forkerte side af loven og udviklede dygtigheder i snigende og bedrag.',
-  Entertainer: 'Du trivedes foran et publikum og lærte at optræde og aflæse en menneskemasse.',
-  'Folk Hero': 'Fra ydmyge kår kaldte skæbnen dig til at blive befolkningens forsvarer.',
-  'Guild Artisan': 'Du er en dygtig håndværker og gildeglem med handelskontakter og ekspertise.',
-  Hermit: 'Du levede i isolation i årevis og søgte hemmeligheder og udviklede indre styrke.',
-  Noble: 'Du forstår rigdom, magt og privilegier — og det ansvar de bærer.',
-  Outlander: 'Du voksede op i vildmarken og lærte at overleve langt fra civilisationen.',
-  Sage: 'Du tilbragte år med at studere gamle tomer og udviklede enorm viden om verden.',
-  Sailor: 'Du har sejlet havene og kender rebene — bogstaveligt og billedligt.',
-  Soldier: 'Du kæmpede i krige og lærte disciplin, taktik og krigens hårde virkelighed.',
-  Urchin: 'Du voksede op på gaderne og udviklede snuhed og overlevelsesinstitikter.',
+  Acolyte: 'You spent your formative years in service of a temple, learning sacred rites and doctrine.',
+  Charlatan: 'You have always had a talent for convincing people you are someone you are not.',
+  Criminal: 'You lived on the wrong side of the law, developing skills in stealth and deception.',
+  Entertainer: 'You thrived in front of an audience, learning to perform and read a crowd.',
+  'Folk Hero': 'From humble origins, fate called you to become the people\'s champion.',
+  'Guild Artisan': 'You are a skilled craftsperson and guild member with trade contacts and expertise.',
+  Hermit: 'You lived in isolation for years, seeking secrets and developing inner strength.',
+  Noble: 'You understand wealth, power, and privilege — and the responsibility they carry.',
+  Outlander: 'You grew up in the wilderness, learning to survive far from civilisation.',
+  Sage: 'You spent years studying ancient tomes, developing vast knowledge of the world.',
+  Sailor: 'You have sailed the seas and know the ropes — literally and figuratively.',
+  Soldier: 'You fought in wars and learned discipline, tactics, and the harsh reality of battle.',
+  Urchin: 'You grew up on the streets, developing cunning and survival instincts.',
 }
 
 interface Props {
@@ -36,7 +36,7 @@ export default function StepBackground({ data, onChange }: Props) {
     icon: BG_ICONS[bg.name],
     shortDesc: BG_DESCRIPTIONS[bg.name] ?? '',
     details: [
-      { label: 'Færdigheder', value: bg.skillProficiencies.join(', ') },
+      { label: 'Skills', value: bg.skillProficiencies.join(', ') },
       { label: 'Feature', value: bg.feature },
     ],
   }))
@@ -44,14 +44,14 @@ export default function StepBackground({ data, onChange }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-dnd-text mb-1">Vælg baggrund</h2>
-        <p className="text-dnd-muted text-sm">Din baggrund fortæller din karakters historie inden eventyrene begyndte.</p>
+        <h2 className="text-xl font-bold text-dnd-text mb-1">Choose a Background</h2>
+        <p className="text-dnd-muted text-sm">Your background tells the story of your character before the adventures began.</p>
       </div>
       <SelectionList
         items={items}
         selected={data.background}
         onSelect={(name) => onChange({ background: name })}
-        placeholder="Søg baggrunde…"
+        placeholder="Search backgrounds…"
       />
     </div>
   )

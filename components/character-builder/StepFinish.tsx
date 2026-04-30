@@ -44,24 +44,24 @@ export default function StepFinish({ data, onChange, onSave, saving, error }: Pr
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-dnd-text mb-1">Afslut karakter</h2>
-        <p className="text-dnd-muted text-sm">Navngiv din karakter og vælg dine resterende færdigheder.</p>
+        <h2 className="text-xl font-bold text-dnd-text mb-1">Finish Character</h2>
+        <p className="text-dnd-muted text-sm">Name your character and choose your remaining skills.</p>
       </div>
 
       {/* Name + Level */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-dnd-muted mb-1.5 uppercase tracking-wider">Navn</label>
+          <label className="block text-sm font-semibold text-dnd-muted mb-1.5 uppercase tracking-wider">Name</label>
           <input
             type="text"
             value={data.name}
             onChange={(e) => onChange({ name: e.target.value })}
-            placeholder="Karakterens navn…"
+            placeholder="Character name…"
             className="w-full px-4 py-2.5 bg-dnd-subtle border border-dnd-border focus:border-dnd-accent rounded-lg text-dnd-text placeholder:text-dnd-muted outline-none transition-colors text-sm"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-dnd-muted mb-1.5 uppercase tracking-wider">Niveau <span className="normal-case font-normal">(1–20)</span></label>
+          <label className="block text-sm font-semibold text-dnd-muted mb-1.5 uppercase tracking-wider">Level <span className="normal-case font-normal">(1–20)</span></label>
           <input
             type="number"
             min={1}
@@ -78,15 +78,15 @@ export default function StepFinish({ data, onChange, onSave, saving, error }: Pr
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-semibold text-dnd-muted uppercase tracking-wider">
-              Klassefærdigheder ({data.className})
+              Class Skills ({data.className})
             </label>
             <span className={`text-sm font-semibold ${remaining > 0 ? 'text-dnd-accent' : 'text-green-500'}`}>
-              {remaining > 0 ? `Vælg ${remaining} mere` : '✓ Valgt'}
+              {remaining > 0 ? `Choose ${remaining} more` : '✓ Selected'}
             </span>
           </div>
           {bgSkills.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
-              <span className="text-xs text-dnd-muted mr-1 self-center">Fra baggrund:</span>
+              <span className="text-xs text-dnd-muted mr-1 self-center">From background:</span>
               {bgSkills.map((s) => (
                 <span key={s} className="text-xs px-2.5 py-1 bg-dnd-accent/20 border border-dnd-accent/40 text-dnd-accent rounded font-medium">
                   ✓ {s}
@@ -122,13 +122,13 @@ export default function StepFinish({ data, onChange, onSave, saving, error }: Pr
       {/* Summary */}
       <div className="border border-dnd-border rounded-lg overflow-hidden">
         <div className="px-4 py-2.5 bg-dnd-subtle border-b border-dnd-border">
-          <p className="text-xs font-bold text-dnd-muted uppercase tracking-wider">Opsummering</p>
+          <p className="text-xs font-bold text-dnd-muted uppercase tracking-wider">Summary</p>
         </div>
 
         {/* Identity row */}
         <div className="px-4 py-3 border-b border-dnd-border flex flex-wrap gap-4 text-sm">
-          <span><span className="text-dnd-muted">Klasse:</span> <strong className="text-dnd-text">{data.className || '—'}</strong></span>
-          <span><span className="text-dnd-muted">Baggrund:</span> <strong className="text-dnd-text">{data.background || '—'}</strong></span>
+          <span><span className="text-dnd-muted">Class:</span> <strong className="text-dnd-text">{data.className || '—'}</strong></span>
+          <span><span className="text-dnd-muted">Background:</span> <strong className="text-dnd-text">{data.background || '—'}</strong></span>
           <span><span className="text-dnd-muted">Species:</span> <strong className="text-dnd-text">{data.race || '—'}</strong></span>
           <span><span className="text-dnd-muted">HP:</span> <strong className="text-dnd-accent text-base">{maxHP}</strong></span>
         </div>
@@ -154,7 +154,7 @@ export default function StepFinish({ data, onChange, onSave, saving, error }: Pr
         {/* Skills */}
         {allSkills.length > 0 && (
           <div className="px-4 py-3 border-t border-dnd-border">
-            <p className="text-xs text-dnd-muted mb-2">Færdighedsproficiencies</p>
+            <p className="text-xs text-dnd-muted mb-2">Skill Proficiencies</p>
             <div className="flex flex-wrap gap-1.5">
               {allSkills.map((s) => (
                 <span key={s} className="text-xs bg-dnd-subtle border border-dnd-border text-dnd-text px-2 py-0.5 rounded">
@@ -175,7 +175,7 @@ export default function StepFinish({ data, onChange, onSave, saving, error }: Pr
         disabled={saving || !data.name.trim()}
         className="w-full py-3.5 bg-dnd-accent hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-opacity text-base tracking-wide"
       >
-        {saving ? 'Opretter karakter…' : '⚔️  Opret karakter'}
+        {saving ? 'Creating character…' : '⚔️  Create Character'}
       </button>
     </div>
   )

@@ -24,7 +24,7 @@ export default function AuthButton({ user }: AuthButtonProps) {
           onClick={handleSignOut}
           className="px-4 py-2 text-sm border border-dnd-border text-dnd-muted hover:text-dnd-text hover:border-dnd-text rounded-lg transition-colors"
         >
-          Log ud
+          Log out
         </button>
       </div>
     )
@@ -35,7 +35,7 @@ export default function AuthButton({ user }: AuthButtonProps) {
       href="/login"
       className="px-5 py-2 bg-dnd-accent hover:opacity-90 text-white font-semibold rounded-lg transition-opacity text-sm"
     >
-      Log ind
+      Log in
     </Link>
   )
 }

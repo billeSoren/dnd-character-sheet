@@ -25,17 +25,17 @@ const TOTAL_STEPS = TABS.length
 
 function validateStep(step: number, data: CharacterFormData): string | null {
   switch (step) {
-    case 1: return data.className ? null : 'Vælg en klasse for at fortsætte.'
-    case 2: return data.background ? null : 'Vælg en baggrund for at fortsætte.'
-    case 3: return data.race ? null : 'Vælg en species for at fortsætte.'
+    case 1: return data.className ? null : 'Select a class to continue.'
+    case 2: return data.background ? null : 'Select a background to continue.'
+    case 3: return data.race ? null : 'Select a species to continue.'
     case 4: {
       if (data.abilityMethod === 'standard') {
         const allAssigned = STANDARD_ARRAY.length === 6 &&
           Object.values(data.standardArrayAssignments).every((v) => v !== null)
-        return allAssigned ? null : 'Tildel alle 6 standardværdier for at fortsætte.'
+        return allAssigned ? null : 'Assign all 6 standard array values to continue.'
       }
       if (data.abilityMethod === 'pointbuy') {
-        return totalPBSpent(data.baseStats) <= PB_BUDGET ? null : 'Reducer dine evnescores til budgettet.'
+        return totalPBSpent(data.baseStats) <= PB_BUDGET ? null : 'Reduce your ability scores to fit the budget.'
       }
       return null
     }
@@ -85,7 +85,7 @@ export default function NewCharacterPage() {
   }
 
   const handleSave = async () => {
-    if (!formData.name.trim()) { setSaveError('Angiv et navn til din karakter.'); return }
+    if (!formData.name.trim()) { setSaveError('Enter a name for your character.'); return }
 
     setSaving(true)
     setSaveError('')
@@ -131,7 +131,7 @@ export default function NewCharacterPage() {
       .select()
       .single()
 
-    if (charErr || !char) { setSaveError(charErr?.message ?? 'Fejl ved oprettelse.'); setSaving(false); return }
+    if (charErr || !char) { setSaveError(charErr?.message ?? 'Error creating character.'); setSaving(false); return }
 
     const { error: statsErr } = await supabase.from('character_stats').insert({
       character_id: char.id,
@@ -151,14 +151,14 @@ export default function NewCharacterPage() {
   if (!authChecked) {
     return (
       <div className="min-h-screen bg-dnd-bg flex items-center justify-center">
-        <div className="text-dnd-muted text-sm animate-pulse">Indlæser…</div>
+        <div className="text-dnd-muted text-sm animate-pulse">Loading…</div>
       </div>
     )
   }
 
   const stepLabel = formData.className || formData.background || formData.race
     ? [formData.className, formData.background, formData.race].filter(Boolean).join(' · ')
-    : 'Ny karakter'
+    : 'New Character'
 
   return (
     <div className="min-h-screen bg-dnd-bg relative">
@@ -173,7 +173,6 @@ export default function NewCharacterPage() {
         }} />
         <div className="absolute right-0 top-0 bottom-0 w-px opacity-30"
           style={{ background: 'linear-gradient(to bottom, transparent, var(--dnd-accent), transparent)' }} />
-        {/* Fantasy rune decoration */}
         <div className="absolute inset-0 flex items-center justify-center opacity-5 text-9xl select-none">
           ⚔️
         </div>
@@ -203,7 +202,7 @@ export default function NewCharacterPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="text-sm font-medium">Tilbage</span>
+            <span className="text-sm font-medium">Back</span>
           </Link>
           <span className="text-dnd-muted text-xs truncate max-w-[200px]">{stepLabel}</span>
           <ThemeToggle />
@@ -282,14 +281,14 @@ export default function NewCharacterPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Tilbage
+              Back
             </button>
             <span className="text-dnd-muted text-xs">{step} / {TOTAL_STEPS}</span>
             <button
               onClick={goNext}
               className="flex items-center gap-2 px-5 py-2 bg-dnd-accent hover:opacity-90 text-white font-semibold rounded-lg text-sm transition-opacity"
             >
-              Næste
+              Next
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -305,7 +304,7 @@ export default function NewCharacterPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Tilbage
+              Back
             </button>
           </footer>
         )}

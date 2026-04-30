@@ -38,12 +38,12 @@ export const DEFAULT_FORM_DATA: CharacterFormData = {
 }
 
 export const STAT_LABELS: Record<StatKey, string> = {
-  STR: 'Styrke',
-  DEX: 'Smidighed',
-  CON: 'Udholdenhed',
-  INT: 'Intelligens',
-  WIS: 'Visdom',
-  CHA: 'Karisma',
+  STR: 'Strength',
+  DEX: 'Dexterity',
+  CON: 'Constitution',
+  INT: 'Intelligence',
+  WIS: 'Wisdom',
+  CHA: 'Charisma',
 }
 
 export const STAT_KEYS: StatKey[] = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']

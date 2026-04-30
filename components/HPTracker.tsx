@@ -54,7 +54,7 @@ export default function HPTracker({ characterId, maxHp, initialCurrentHp, initia
     <div className="border border-dnd-border bg-dnd-subtle rounded-lg p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold text-dnd-muted uppercase tracking-wider">Hit Points</h3>
-        {saving && <span className="text-xs text-dnd-muted animate-pulse">gemmer…</span>}
+        {saving && <span className="text-xs text-dnd-muted animate-pulse">saving…</span>}
       </div>
 
       {/* HP fraction */}
@@ -65,7 +65,7 @@ export default function HPTracker({ characterId, maxHp, initialCurrentHp, initia
           </span>
           <span className="text-dnd-muted text-xl mb-1">/ {maxHp}</span>
         </div>
-        {isDead && <p className="text-red-500 text-xs mt-1 font-medium">Bevidstløs</p>}
+        {isDead && <p className="text-red-500 text-xs mt-1 font-medium">Unconscious</p>}
       </div>
 
       {/* HP bar */}
@@ -96,13 +96,13 @@ export default function HPTracker({ characterId, maxHp, initialCurrentHp, initia
 
       {/* Custom delta */}
       <div className="flex gap-1.5">
-        <HPCustomButton label="Skade" negative onCommit={(v) => adjust(-v)} disabled={saving} />
+        <HPCustomButton label="Damage" negative onCommit={(v) => adjust(-v)} disabled={saving} />
         <HPCustomButton label="Healing" negative={false} onCommit={(v) => adjust(v)} disabled={saving} />
       </div>
 
       {/* Temp HP */}
       <div className="border-t border-dnd-border pt-3 flex items-center justify-between">
-        <span className="text-sm text-dnd-muted">Midlertidige HP</span>
+        <span className="text-sm text-dnd-muted">Temporary HP</span>
         {editingTemp ? (
           <div className="flex items-center gap-1">
             <input
@@ -121,7 +121,7 @@ export default function HPTracker({ characterId, maxHp, initialCurrentHp, initia
             onClick={() => { setTempInput(String(tempHp)); setEditingTemp(true) }}
             className="text-dnd-accent font-bold text-sm hover:opacity-80 transition-opacity"
           >
-            {tempHp > 0 ? `+${tempHp}` : '—'} <span className="text-dnd-muted font-normal text-xs">klik for at redigere</span>
+            {tempHp > 0 ? `+${tempHp}` : '—'} <span className="text-dnd-muted font-normal text-xs">click to edit</span>
           </button>
         )}
       </div>

@@ -58,12 +58,6 @@ export default function StepClass({ data, onChange, classes, loading }: Props) {
           ? `${cls.num_skill_choices} of ${(cls.skill_choices ?? []).length}`
           : '—',
       },
-      {
-        label: 'Subclasses',
-        value: (cls.subclasses ?? []).length > 0
-          ? cls.subclasses.slice(0, 3).join(', ') + (cls.subclasses.length > 3 ? '…' : '')
-          : '—',
-      },
     ],
   }))
 

@@ -109,8 +109,6 @@ export interface Database {
           skill_choices: string[]
           num_skill_choices: number
           description: string | null
-          subclasses: string[]
-          spellcasting: string | null
         }
         Insert: Record<string, never>
         Update: Record<string, never>

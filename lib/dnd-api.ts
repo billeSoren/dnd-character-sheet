@@ -20,8 +20,6 @@ export interface DndClass {
   skill_choices: string[]
   num_skill_choices: number
   description: string
-  subclasses: string[]
-  spellcasting: string | null
 }
 
 export interface DndBackground {
@@ -58,7 +56,7 @@ export async function fetchClasses(): Promise<DndClass[]> {
     .select(
       'id, name, source, hit_die, primary_ability, saving_throws, ' +
       'armor_proficiencies, weapon_proficiencies, skill_choices, ' +
-      'num_skill_choices, description, subclasses, spellcasting'
+      'num_skill_choices, description'
     )
     .order('name')
   if (error) throw new Error(`fetchClasses: ${error.message}`)

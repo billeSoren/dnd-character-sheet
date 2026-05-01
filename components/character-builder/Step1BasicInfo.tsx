@@ -90,9 +90,7 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
             <p className="text-stone-400">
               <span className="text-amber-400/70">Hit Die:</span> d{selectedClass.hitDie}
             </p>
-            <p className="text-stone-400">
-              <span className="text-amber-400/70">Underklasser:</span> {selectedClass.subclasses.join(', ')}
-            </p>
+
           </div>
         )}
       </div>

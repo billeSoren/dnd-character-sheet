@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { classes, races, backgrounds } from '@/lib/dnd-data'
+import { fetchClasses, fetchBackgrounds, fetchRaces, DndClass, DndBackground, DndRace } from '@/lib/dnd-api'
 import {
   CharacterFormData, DEFAULT_FORM_DATA, StatKey,
   modifier, calculateMaxHP, totalPBSpent, PB_BUDGET, STANDARD_ARRAY,
@@ -56,12 +56,33 @@ export default function NewCharacterPage() {
   const [saveError, setSaveError] = useState('')
   const [authChecked, setAuthChecked] = useState(false)
 
+  const [dbClasses, setDbClasses] = useState<DndClass[]>([])
+  const [dbBackgrounds, setDbBackgrounds] = useState<DndBackground[]>([])
+  const [dbRaces, setDbRaces] = useState<DndRace[]>([])
+  const [dataLoading, setDataLoading] = useState(true)
+  const [dataError, setDataError] = useState('')
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) router.push('/login')
       else setAuthChecked(true)
     })
   }, [router, supabase])
+
+  useEffect(() => {
+    Promise.all([fetchClasses(), fetchBackgrounds(), fetchRaces()])
+      .then(([cls, bgs, races]) => {
+        setDbClasses(cls)
+        setDbBackgrounds(bgs)
+        setDbRaces(races)
+      })
+      .catch((err: Error) => setDataError(err.message))
+      .finally(() => setDataLoading(false))
+  }, [])
+
+  const selectedClass = dbClasses.find((c) => c.name === formData.className) ?? null
+  const selectedBg    = dbBackgrounds.find((b) => b.name === formData.background) ?? null
+  const selectedRace  = dbRaces.find((r) => r.name === formData.race) ?? null
 
   const updateForm = (partial: Partial<CharacterFormData>) => {
     setFormData((prev) => ({ ...prev, ...partial }))
@@ -93,12 +114,8 @@ export default function NewCharacterPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
 
-    const selectedClass = classes.find((c) => c.name === formData.className)
-    const selectedRace  = races.find((r) => r.name === formData.race)
-    const selectedBg    = backgrounds.find((b) => b.name === formData.background)
-
-    const racialBonus = (stat: StatKey) =>
-      selectedRace?.abilityBonuses.find((b) => b.ability === stat)?.bonus ?? 0
+    const racialBonus = (stat: StatKey): number =>
+      selectedRace?.ability_bonuses?.[stat] ?? 0
 
     const finalStats = {
       STR: formData.baseStats.STR + racialBonus('STR'),
@@ -109,14 +126,16 @@ export default function NewCharacterPage() {
       CHA: formData.baseStats.CHA + racialBonus('CHA'),
     }
 
-    const hitDie  = selectedClass?.hitDie ?? 8
-    const conMod  = modifier(finalStats.CON)
-    const maxHP   = calculateMaxHP(hitDie, conMod, formData.level)
-    const allSkills = [
-      ...(selectedBg?.skillProficiencies ?? []),
-      ...formData.selectedSkills,
-    ]
+    const hitDie = selectedClass?.hit_die ?? 8
+    const conMod = modifier(finalStats.CON)
+    const maxHP  = calculateMaxHP(hitDie, conMod, formData.level)
 
+    const bgSkills = selectedBg?.skill_proficiencies ?? []
+    const allSkills = [...bgSkills, ...formData.selectedSkills]
+
+    // Insert character row.
+    // NOTE: To also save class_id / background_id / race_id, add those columns
+    // to your `characters` table in Supabase and uncomment the three lines below.
     const { data: char, error: charErr } = await supabase
       .from('characters')
       .insert({
@@ -126,6 +145,9 @@ export default function NewCharacterPage() {
         class: formData.className,
         level: formData.level,
         background: formData.background,
+        // class_id: formData.classId,
+        // background_id: formData.backgroundId,
+        // race_id: formData.raceId,
         skill_proficiencies: allSkills,
       })
       .select()
@@ -244,12 +266,40 @@ export default function NewCharacterPage() {
           })}
         </nav>
 
+        {/* Data error banner */}
+        {dataError && (
+          <div className="mx-5 mt-4 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+            Failed to load D&D data: {dataError}
+          </div>
+        )}
+
         {/* Step content */}
         <div className="flex-1 px-5 py-6 overflow-y-auto dnd-scrollbar">
-          {step === 1 && <StepClass       data={formData} onChange={updateForm} />}
-          {step === 2 && <StepBackground  data={formData} onChange={updateForm} />}
-          {step === 3 && <StepSpecies     data={formData} onChange={updateForm} />}
-          {step === 4 && <StepAbilities   data={formData} onChange={updateForm} />}
+          {step === 1 && (
+            <StepClass
+              data={formData}
+              onChange={updateForm}
+              classes={dbClasses}
+              loading={dataLoading}
+            />
+          )}
+          {step === 2 && (
+            <StepBackground
+              data={formData}
+              onChange={updateForm}
+              backgrounds={dbBackgrounds}
+              loading={dataLoading}
+            />
+          )}
+          {step === 3 && (
+            <StepSpecies
+              data={formData}
+              onChange={updateForm}
+              races={dbRaces}
+              loading={dataLoading}
+            />
+          )}
+          {step === 4 && <StepAbilities data={formData} onChange={updateForm} />}
           {step === 5 && (
             <StepFinish
               data={formData}
@@ -257,6 +307,9 @@ export default function NewCharacterPage() {
               onSave={handleSave}
               saving={saving}
               error={saveError}
+              selectedClass={selectedClass}
+              selectedBg={selectedBg}
+              selectedRace={selectedRace}
             />
           )}
 

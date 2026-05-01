@@ -96,6 +96,58 @@ export interface Database {
         }
         Relationships: []
       }
+      dnd_classes: {
+        Row: {
+          id: string
+          name: string
+          source: string
+          hit_die: number
+          primary_ability: string[]
+          saving_throws: string[]
+          armor_proficiencies: string[]
+          weapon_proficiencies: string[]
+          skill_choices: string[]
+          num_skill_choices: number
+          description: string | null
+          subclasses: string[]
+          spellcasting: string | null
+        }
+        Insert: Record<string, never>
+        Update: Record<string, never>
+        Relationships: []
+      }
+      races: {
+        Row: {
+          id: string
+          name: string
+          source: string
+          ability_bonuses: Record<string, number> | null
+          speed: number | null
+          size: string | null
+          traits: string[] | null
+          languages: string[] | null
+          description: string | null
+        }
+        Insert: Record<string, never>
+        Update: Record<string, never>
+        Relationships: []
+      }
+      backgrounds: {
+        Row: {
+          id: string
+          name: string
+          source: string
+          description: string | null
+          skill_proficiencies: string[]
+          tool_proficiencies: string[]
+          languages: string[]
+          feature_name: string | null
+          feature_description: string | null
+        }
+        Insert: Record<string, never>
+        Update: Record<string, never>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

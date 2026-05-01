@@ -1,4 +1,4 @@
-import { classes, races, backgrounds } from '@/lib/dnd-data'
+import { DndClass, DndBackground, DndRace } from '@/lib/dnd-api'
 import {
   CharacterFormData, STAT_KEYS, STAT_LABELS, StatKey,
   modifier, modStr, calculateMaxHP,
@@ -10,31 +10,38 @@ interface Props {
   onSave: () => void
   saving: boolean
   error: string
+  selectedClass: DndClass | null
+  selectedBg: DndBackground | null
+  selectedRace: DndRace | null
 }
 
-export default function StepFinish({ data, onChange, onSave, saving, error }: Props) {
-  const selectedClass = classes.find((c) => c.name === data.className)
-  const selectedRace = races.find((r) => r.name === data.race)
-  const selectedBg = backgrounds.find((b) => b.name === data.background)
-
-  const racialBonus = (stat: StatKey) =>
-    selectedRace?.abilityBonuses.find((b) => b.ability === stat)?.bonus ?? 0
+export default function StepFinish({
+  data, onChange, onSave, saving, error,
+  selectedClass, selectedBg, selectedRace,
+}: Props) {
+  const racialBonus = (stat: StatKey): number =>
+    selectedRace?.ability_bonuses?.[stat] ?? 0
 
   const totalStat = (stat: StatKey) => data.baseStats[stat] + racialBonus(stat)
-  const hitDie = selectedClass?.hitDie ?? 8
+
+  const hitDie = selectedClass?.hit_die ?? 8
   const conMod = modifier(totalStat('CON'))
   const maxHP = calculateMaxHP(hitDie, conMod, data.level)
 
-  const bgSkills = selectedBg?.skillProficiencies ?? []
-  const classChoices = selectedClass?.skillChoices ?? { choose: 0, from: [] }
-  const availableClassSkills = classChoices.from.filter((s) => !bgSkills.includes(s))
-  const remaining = classChoices.choose - data.selectedSkills.length
+  const bgSkills = selectedBg?.skill_proficiencies ?? []
+
+  // Derive class skill choices from DB columns (skill_choices = list of options,
+  // num_skill_choices = how many to pick)
+  const classSkillPool = selectedClass?.skill_choices ?? []
+  const classSkillCount = selectedClass?.num_skill_choices ?? 0
+  const availableClassSkills = classSkillPool.filter((s) => !bgSkills.includes(s))
+  const remaining = classSkillCount - data.selectedSkills.length
 
   const toggleSkill = (skill: string) => {
     const already = data.selectedSkills.includes(skill)
     if (already) {
       onChange({ selectedSkills: data.selectedSkills.filter((s) => s !== skill) })
-    } else if (data.selectedSkills.length < classChoices.choose) {
+    } else if (data.selectedSkills.length < classSkillCount) {
       onChange({ selectedSkills: [...data.selectedSkills, skill] })
     }
   }

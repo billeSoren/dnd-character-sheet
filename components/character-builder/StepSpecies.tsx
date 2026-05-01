@@ -1,10 +1,14 @@
-import { races } from '@/lib/dnd-data'
+import { DndRace, formatAbilityBonuses, DEFAULT_SOURCE } from '@/lib/dnd-api'
 import { CharacterFormData } from './types'
 import SelectionList, { SelectionItem } from './SelectionList'
+import StepLoadingSkeleton from './StepLoadingSkeleton'
 
 const RACE_ICONS: Record<string, string> = {
   Dwarf: '⛏️', Elf: '🌙', Halfling: '🍀', Human: '👤',
   Dragonborn: '🐉', Gnome: '🔬', 'Half-Elf': '🌅', 'Half-Orc': '🪨', Tiefling: '🔥',
+  Aasimar: '✨', Goliath: '🏔️', Tabaxi: '🐱', Firbolg: '🌲', Kenku: '🐦',
+  Lizardfolk: '🦎', Triton: '🌊', Bugbear: '👹', Goblin: '👺', Hobgoblin: '⚔️',
+  Kobold: '🐍', Orc: '🪨', Yuan_ti: '🐍',
 }
 
 const RACE_DESCRIPTIONS: Record<string, string> = {
@@ -22,25 +26,37 @@ const RACE_DESCRIPTIONS: Record<string, string> = {
 interface Props {
   data: CharacterFormData
   onChange: (data: Partial<CharacterFormData>) => void
+  races: DndRace[]
+  loading?: boolean
 }
 
-export default function StepSpecies({ data, onChange }: Props) {
-  const items: SelectionItem[] = races.map((r) => ({
-    name: r.name,
-    source: "Player's Handbook",
-    icon: RACE_ICONS[r.name],
-    shortDesc: RACE_DESCRIPTIONS[r.name] ?? '',
-    details: [
-      { label: 'Size', value: r.size },
-      { label: 'Speed', value: `${r.speed} ft` },
-      ...(r.abilityBonuses.length > 0
-        ? [{ label: 'Ability Bonuses', value: r.abilityBonuses.map((b) => `${b.ability} +${b.bonus}`).join(', ') }]
-        : []),
-      ...(r.traits.length > 0
-        ? [{ label: 'Traits', value: r.traits.slice(0, 4).join(', ') + (r.traits.length > 4 ? '…' : '') }]
-        : []),
-    ],
-  }))
+export default function StepSpecies({ data, onChange, races, loading }: Props) {
+  if (loading) {
+    return (
+      <StepLoadingSkeleton
+        title="Choose a Species"
+        description="Your species grants your character unique ability bonuses and racial traits."
+      />
+    )
+  }
+
+  const items: SelectionItem[] = races.map((r) => {
+    const bonusStr = r.ability_bonuses ? formatAbilityBonuses(r.ability_bonuses) : ''
+    return {
+      name: r.name,
+      source: r.source || DEFAULT_SOURCE,
+      icon: RACE_ICONS[r.name],
+      shortDesc: RACE_DESCRIPTIONS[r.name] ?? r.description?.slice(0, 120) ?? '',
+      details: [
+        { label: 'Size', value: r.size || '—' },
+        { label: 'Speed', value: r.speed ? `${r.speed} ft` : '—' },
+        ...(bonusStr ? [{ label: 'Ability Bonuses', value: bonusStr }] : []),
+        ...((r.traits ?? []).length > 0
+          ? [{ label: 'Traits', value: r.traits.slice(0, 4).join(', ') + (r.traits.length > 4 ? '…' : '') }]
+          : []),
+      ],
+    }
+  })
 
   return (
     <div>
@@ -51,7 +67,10 @@ export default function StepSpecies({ data, onChange }: Props) {
       <SelectionList
         items={items}
         selected={data.race}
-        onSelect={(name) => onChange({ race: name })}
+        onSelect={(name) => {
+          const race = races.find((r) => r.name === name)
+          onChange({ race: name, raceId: race?.id ?? null })
+        }}
         placeholder="Search species…"
       />
     </div>

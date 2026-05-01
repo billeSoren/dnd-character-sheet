@@ -11,10 +11,13 @@ export const PB_BUDGET = 27
 export interface CharacterFormData {
   // Step 1
   className: string
+  classId: string | null
   // Step 2
   background: string
+  backgroundId: string | null
   // Step 3
   race: string
+  raceId: string | null
   // Step 4
   abilityMethod: AbilityMethod
   baseStats: Record<StatKey, number>
@@ -27,8 +30,11 @@ export interface CharacterFormData {
 
 export const DEFAULT_FORM_DATA: CharacterFormData = {
   className: '',
+  classId: null,
   background: '',
+  backgroundId: null,
   race: '',
+  raceId: null,
   abilityMethod: 'standard',
   baseStats: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 },
   standardArrayAssignments: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },

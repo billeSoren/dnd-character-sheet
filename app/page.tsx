@@ -30,6 +30,13 @@ export default async function Home() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/spells"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dnd-border text-dnd-muted hover:text-dnd-accent hover:border-dnd-accent/40 transition-colors text-sm font-medium"
+            >
+              <span>✨</span>
+              <span className="hidden sm:inline">Spells</span>
+            </Link>
             <ThemeToggle />
             <AuthButton user={user} />
           </div>

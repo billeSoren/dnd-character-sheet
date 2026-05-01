@@ -60,7 +60,17 @@ export async function fetchClasses(): Promise<DndClass[]> {
     )
     .order('name')
   if (error) throw new Error(`fetchClasses: ${error.message}`)
-  return (data ?? []) as unknown as DndClass[]
+
+  const priority = ['PHB24', 'PHB', 'TCE', 'FOA', 'BR']
+  const seen = new Map<string, DndClass>()
+  for (const row of (data ?? []) as unknown as DndClass[]) {
+    const existing = seen.get(row.name)
+    if (!existing) { seen.set(row.name, row); continue }
+    const curRank  = priority.indexOf(row.source)      === -1 ? Infinity : priority.indexOf(row.source)
+    const bestRank = priority.indexOf(existing.source) === -1 ? Infinity : priority.indexOf(existing.source)
+    if (curRank < bestRank) seen.set(row.name, row)
+  }
+  return Array.from(seen.values())
 }
 
 export async function fetchBackgrounds(): Promise<DndBackground[]> {

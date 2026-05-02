@@ -61,8 +61,11 @@ const OFFICIAL_SOURCES = ['PHB', 'PHB24', 'BR', 'DMG', 'DMG24', 'MM', 'SRD']
 // Used when allowedSources prop is absent (e.g. character pre-dates the column).
 // Covers all major WotC releases; excludes third-party / homebrew by default.
 const DEFAULT_ALLOWED_SOURCES = [
-  'PHB', 'PHB24', 'BR', 'XGE', 'TCE', 'SCAG', 'GGtR',
-  'EGtW', 'MOoT', 'FToD', 'VRGtR', 'SCC', 'DMG', 'SRD',
+  'PHB', 'PHB24', 'BR', 'DMG', 'SRD',
+  'XGE', 'TCE', 'SCAG', 'GGtR', 'EGtW',
+  'MOoT', 'FToD', 'VRGtR', 'SCC', 'BGG',
+  'SAiS', 'PAitM', 'BoMT', 'VGtM', 'MToF',
+  'MotM', 'BHC', 'AI', 'WBtW', 'CRCotN',
 ]
 
 const SUBCLASS_SUGGESTIONS: Partial<Record<ClassName, string[]>> = {

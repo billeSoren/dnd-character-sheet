@@ -190,7 +190,7 @@ export default function StepPreferences({ data, onChange, onStart, startError }:
             disabled={data.edition !== '5e'}
             onChange={setExpandedRules}
             label="Expanded Rules"
-            description="TCE (Tasha's), XGE (Xanathar's) — 5e only"
+            description="XGE, TCE, SCAG, GGtR, EGtW, MOT, VGtM, MToF, MotM and more — 5e only"
           />
           <Checkbox
             checked={data.thirdParty}

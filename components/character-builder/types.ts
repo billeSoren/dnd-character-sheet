@@ -8,8 +8,27 @@ const BASE_SOURCES: Record<Edition, string[]> = {
   '5e':   ['PHB', 'BR'],
   '5.5e': ['PHB24', 'BR'],
 }
-const EXPANDED_SOURCES    = ['TCE', 'XGE']
-const THIRD_PARTY_SOURCES = ['FOA', 'BHC', 'D&DV']
+const EXPANDED_SOURCES = [
+  'XGE', 'XGtE',         // Xanathar's Guide to Everything
+  'TCE', 'TCoE',         // Tasha's Cauldron of Everything
+  'SCAG',                // Sword Coast Adventurer's Guide
+  'GGtR',                // Guildmasters' Guide to Ravnica
+  'RftLW', 'ERLW',       // Eberron: Rising from the Last War
+  'EGtW',                // Explorer's Guide to Wildemount
+  'MOT', 'MOoT',         // Mythic Odysseys of Theros
+  'VGtM',                // Volo's Guide to Monsters
+  'MToF',                // Mordenkainen's Tome of Foes
+  'FToD',                // Fizban's Treasury of Dragons
+  'MotM', 'MPMM',        // Mordenkainen Presents: Monsters of the Multiverse
+  'VRGtR',               // Van Richten's Guide to Ravenloft
+  'SCC', 'SCoC',         // Strixhaven
+  'JttRC',               // Journeys Through the Radiant Citadel
+]
+const THIRD_PARTY_SOURCES = [
+  'FOA',                 // Forgotten Adventures
+  'D&DV',                // D&D Vault
+  'BHC',                 // Blood Hunter Class (Matt Mercer)
+]
 
 export function computeAllowedSources(
   edition: Edition,

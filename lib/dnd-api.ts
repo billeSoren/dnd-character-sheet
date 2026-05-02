@@ -77,7 +77,13 @@ export async function fetchClasses(sources?: string[]): Promise<DndClass[]> {
 }
 
 const BG_RACE_PRIORITY = [
-  'PHB24', 'PHB', 'TCE', 'XGE', 'SCAG', 'GGtR', 'FOA', 'D&DV', 'BR', 'wiki',
+  'PHB24', 'PHB',
+  'TCE', 'TCoE', 'XGE', 'XGtE',
+  'SCAG', 'GGtR', 'RftLW', 'ERLW', 'EGtW',
+  'MOT', 'MOoT', 'VGtM', 'MToF', 'FToD',
+  'MotM', 'MPMM', 'VRGtR', 'SCC', 'SCoC', 'JttRC',
+  'FOA', 'D&DV', 'BHC', 'BR', 'wiki',
+  // null / unknown sources rank last (indexOf returns -1 → Infinity)
 ]
 
 function dedup<T extends { name: string; source: string }>(rows: T[]): T[] {

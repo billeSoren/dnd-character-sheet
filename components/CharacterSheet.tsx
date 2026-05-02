@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import ThemeToggle from './ThemeToggle'
 import { StatKey } from '@/components/character-builder/types'
 import MagicItemBrowser from '@/components/magic-items/MagicItemBrowser'
+import DeleteCharacterModal from './DeleteCharacterModal'
 import {
   MagicItem, CharacterItemWithItem,
   rarityColor, rarityBorder,
@@ -132,6 +134,17 @@ export default function CharacterSheet(props: CharacterSheetProps) {
 function LeftPanel({ character, profBonus, initiative, ac, speed, passivePerception, classInfo }:
   Pick<CharacterSheetProps, 'character'|'profBonus'|'initiative'|'ac'|'speed'|'passivePerception'|'classInfo'>
 ) {
+  const router  = useRouter()
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting,   setDeleting]   = useState(false)
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    const supabase = createClient()
+    await supabase.from('characters').delete().eq('id', character.id)
+    router.push('/')
+  }
+
   const initials = character.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
   const hitDice = `${character.level}d${classInfo?.hit_die ?? 8}`
 
@@ -185,6 +198,28 @@ function LeftPanel({ character, profBonus, initiative, ac, speed, passivePercept
 
       {/* Inspiration */}
       <InspirationToggle />
+
+      {/* Delete character */}
+      <button
+        type="button"
+        onClick={() => setDeleteOpen(true)}
+        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-red-500/20 text-red-500/60 hover:text-red-400 hover:border-red-500/50 hover:bg-red-500/5 transition-all text-xs font-semibold tracking-wide"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete Character
+      </button>
+
+      {deleteOpen && (
+        <DeleteCharacterModal
+          name={character.name}
+          loading={deleting}
+          onCancel={() => setDeleteOpen(false)}
+          onConfirm={handleDelete}
+        />
+      )}
     </div>
   )
 }

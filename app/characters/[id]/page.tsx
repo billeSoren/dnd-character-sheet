@@ -91,6 +91,24 @@ function computeSpellSlots(className: string, level: number): number[] {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+// ── Runtime helpers ───────────────────────────────────────────────────────────
+
+/** Coerce a DB value that should be string[] but may arrive as string | null */
+function toArr(v: unknown): string[] {
+  if (v == null) return []
+  if (Array.isArray(v)) return v as string[]
+  if (typeof v === 'string') return v.length > 0 ? [v] : []
+  return []
+}
+
+/** Coerce a DB value that should be Record<string,number> but may arrive as null */
+function toNumRecord(v: unknown): Record<string, number> {
+  if (v != null && typeof v === 'object' && !Array.isArray(v)) {
+    return v as Record<string, number>
+  }
+  return {}
+}
+
 export default async function CharacterPage({ params }: { params: { id: string } }) {
   try {
     return await renderCharacterPage(params)
@@ -101,13 +119,16 @@ export default async function CharacterPage({ params }: { params: { id: string }
 }
 
 async function renderCharacterPage({ id }: { id: string }) {
+  console.log('[CharacterPage] start id=', id)
   const supabase = await createServerSupabaseClient()
+  console.log('[CharacterPage] supabase ready')
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+  console.log('[CharacterPage] user ok')
 
   const [
-    { data: character },
+    { data: character, error: charErr },
     { data: statsRow },
     { data: hpRow },
   ] = await Promise.all([
@@ -116,20 +137,25 @@ async function renderCharacterPage({ id }: { id: string }) {
     supabase.from('character_hp').select('*').eq('character_id', id).single(),
   ])
 
+  if (charErr) console.error('[CharacterPage] character query error:', charErr)
   if (!character) notFound()
+  console.log('[CharacterPage] character=', character!.name, 'class=', character!.class)
 
   // Fetch live class + race from Supabase (prefer PHB source, fall back to first)
-  const [{ data: classRows }, { data: raceRows }] = await Promise.all([
-    supabase.from('dnd_classes').select('*').eq('name', character.class).order('source'),
-    supabase.from('races').select('*').eq('name', character.race).order('source'),
+  const [{ data: classRows, error: classErr }, { data: raceRows, error: raceErr }] = await Promise.all([
+    supabase.from('dnd_classes').select('*').eq('name', character!.class).order('source'),
+    supabase.from('races').select('*').eq('name', character!.race).order('source'),
   ])
+  if (classErr) console.error('[CharacterPage] dnd_classes error:', classErr)
+  if (raceErr)  console.error('[CharacterPage] races error:', raceErr)
 
   const classRow = classRows?.find((r) => r.source === 'PHB') ?? classRows?.[0] ?? null
   const raceRow  = raceRows?.find((r) => r.source === 'PHB') ?? raceRows?.[0] ?? null
+  console.log('[CharacterPage] classRow=', classRow?.name ?? 'null', 'raceRow=', raceRow?.name ?? 'null')
 
   // ── Derived values ────────────────────────────────────────────────────────
 
-  const pb = profBonus(character.level)
+  const pb = profBonus(character!.level)
 
   const statScores: Record<StatKey, number> = {
     STR: statsRow?.strength     ?? 10,
@@ -139,9 +165,10 @@ async function renderCharacterPage({ id }: { id: string }) {
     WIS: statsRow?.wisdom       ?? 10,
     CHA: statsRow?.charisma     ?? 10,
   }
+  console.log('[CharacterPage] statScores ok')
 
   const savingThrowProfs = new Set<StatKey>(
-    (classRow?.saving_throws ?? []).map(toStatKey).filter(Boolean) as StatKey[]
+    toArr(classRow?.saving_throws).map(toStatKey).filter(Boolean) as StatKey[]
   )
 
   const STAT_META: { key: StatKey; label: string }[] = [
@@ -163,7 +190,7 @@ async function renderCharacterPage({ id }: { id: string }) {
     Performance: 'CHA', Persuasion: 'CHA', Religion: 'INT',
     'Sleight of Hand': 'DEX', Stealth: 'DEX', Survival: 'WIS',
   }
-  const proficiencySet = new Set(character.skill_proficiencies ?? [])
+  const proficiencySet = new Set(character!.skill_proficiencies ?? [])
   const skillList = Object.entries(SKILL_ABILITY)
     .map(([name, ability]) => {
       const proficient = proficiencySet.has(name)
@@ -175,17 +202,18 @@ async function renderCharacterPage({ id }: { id: string }) {
   const passivePerception = 10 + (perception?.total ?? mod(statScores.WIS))
 
   const speed = (raceRow?.speed as number | null) ?? 30
+  console.log('[CharacterPage] derived values ok, rendering')
 
   return (
     <CharacterSheet
       character={{
-        id: character.id,
-        name: character.name,
-        race: character.race,
-        class: character.class,
-        level: character.level,
-        background: character.background,
-        skill_proficiencies: character.skill_proficiencies ?? [],
+        id: character!.id,
+        name: character!.name,
+        race: character!.race,
+        class: character!.class,
+        level: character!.level,
+        background: character!.background,
+        skill_proficiencies: character!.skill_proficiencies ?? [],
       }}
       statScores={statScores}
       hp={{ max: hpRow?.max_hp ?? 0, current: hpRow?.current_hp ?? 0, temp: hpRow?.temp_hp ?? 0 }}
@@ -197,20 +225,20 @@ async function renderCharacterPage({ id }: { id: string }) {
       passivePerception={passivePerception}
       savingThrows={savingThrows}
       skillList={skillList}
-      spellSlots={computeSpellSlots(character.class, character.level)}
+      spellSlots={computeSpellSlots(character!.class, character!.level)}
       classInfo={classRow ? {
         description: classRow.description ?? '',
         hit_die: classRow.hit_die ?? 8,
-        armor_proficiencies: (classRow.armor_proficiencies ?? []).join(', '),
-        weapon_proficiencies: (classRow.weapon_proficiencies ?? []).join(', '),
-        primary_ability: (classRow.primary_ability ?? []).join(', '),
-        saving_throws: classRow.saving_throws ?? [],
+        armor_proficiencies: toArr(classRow.armor_proficiencies).join(', '),
+        weapon_proficiencies: toArr(classRow.weapon_proficiencies).join(', '),
+        primary_ability: toArr(classRow.primary_ability).join(', '),
+        saving_throws: toArr(classRow.saving_throws),
       } : null}
       raceInfo={raceRow ? {
         description: raceRow.description ?? '',
-        traits: (raceRow.traits as string[] | null) ?? [],
-        languages: (raceRow.languages as string[] | null) ?? [],
-        ability_bonuses: (raceRow.ability_bonuses as Record<string, number> | null) ?? {},
+        traits:          toArr(raceRow.traits),
+        languages:       toArr(raceRow.languages),
+        ability_bonuses: toNumRecord(raceRow.ability_bonuses),
       } : null}
     />
   )

@@ -76,22 +76,25 @@ export async function fetchClasses(sources?: string[]): Promise<DndClass[]> {
   return Array.from(seen.values())
 }
 
-// Exact codes as they exist in the DB; unknown sources rank last (Infinity)
-const BG_RACE_PRIORITY = [
-  'PHB24', 'PHB',
+// Exact codes as they exist in the DB; unknown sources rank last (Infinity).
+// 5.5e (PHB24) edition puts PHB24 first so the 2024 versions win dedup.
+// 5e (PHB) edition puts PHB first so 5e characters never get PHB24 variants.
+const TAIL = [
   'TCE', 'XGE', 'SCAG', 'GGtR', 'ERLW', 'EGtW',
   'MOoT', 'VGtM', 'MToF', 'FToD', 'MotM', 'VRGtR',
   'SCC', 'JttRC', 'SAiS', 'BoMT', 'BGG', 'FRHoF',
   'FOA', 'D&DV', 'BHC', 'GH55', 'WGE', 'BR',
 ]
+const PRIORITY_55E = ['PHB24', 'PHB', ...TAIL]
+const PRIORITY_5E  = ['PHB',  'PHB24', ...TAIL]
 
-function dedup<T extends { name: string; source: string }>(rows: T[]): T[] {
+function dedupWith<T extends { name: string; source: string }>(rows: T[], priority: string[]): T[] {
   const seen = new Map<string, T>()
   for (const row of rows) {
     const existing = seen.get(row.name)
     if (!existing) { seen.set(row.name, row); continue }
-    const cur  = BG_RACE_PRIORITY.indexOf(row.source)      === -1 ? Infinity : BG_RACE_PRIORITY.indexOf(row.source)
-    const best = BG_RACE_PRIORITY.indexOf(existing.source) === -1 ? Infinity : BG_RACE_PRIORITY.indexOf(existing.source)
+    const cur  = priority.indexOf(row.source)      === -1 ? Infinity : priority.indexOf(row.source)
+    const best = priority.indexOf(existing.source) === -1 ? Infinity : priority.indexOf(existing.source)
     if (cur < best) seen.set(row.name, row)
   }
   return Array.from(seen.values())
@@ -110,7 +113,8 @@ export async function fetchBackgrounds(sources?: string[]): Promise<DndBackgroun
   if (sources?.length) q = q.in('source', sources)
   const { data, error } = await q
   if (error) throw new Error(`fetchBackgrounds: ${error.message}`)
-  return dedup((data ?? []) as unknown as DndBackground[])
+  const priority = sources?.includes('PHB24') ? PRIORITY_55E : PRIORITY_5E
+  return dedupWith((data ?? []) as unknown as DndBackground[], priority)
 }
 
 export async function fetchRaces(sources?: string[]): Promise<DndRace[]> {
@@ -125,7 +129,8 @@ export async function fetchRaces(sources?: string[]): Promise<DndRace[]> {
   if (sources?.length) q = q.in('source', sources)
   const { data, error } = await q
   if (error) throw new Error(`fetchRaces: ${error.message}`)
-  return dedup((data ?? []) as unknown as DndRace[])
+  const priority = sources?.includes('PHB24') ? PRIORITY_55E : PRIORITY_5E
+  return dedupWith((data ?? []) as unknown as DndRace[], priority)
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

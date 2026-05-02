@@ -93,6 +93,15 @@ function computeSpellSlots(className: string, level: number): number[] {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function CharacterPage({ params }: { params: { id: string } }) {
+  try {
+    return await renderCharacterPage(params)
+  } catch (err) {
+    console.error('[CharacterPage] Unhandled error:', err)
+    throw err
+  }
+}
+
+async function renderCharacterPage({ id }: { id: string }) {
   const supabase = await createServerSupabaseClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -103,9 +112,9 @@ export default async function CharacterPage({ params }: { params: { id: string }
     { data: statsRow },
     { data: hpRow },
   ] = await Promise.all([
-    supabase.from('characters').select('*').eq('id', params.id).single(),
-    supabase.from('character_stats').select('*').eq('character_id', params.id).single(),
-    supabase.from('character_hp').select('*').eq('character_id', params.id).single(),
+    supabase.from('characters').select('*').eq('id', id).single(),
+    supabase.from('character_stats').select('*').eq('character_id', id).single(),
+    supabase.from('character_hp').select('*').eq('character_id', id).single(),
   ])
 
   if (!character) notFound()

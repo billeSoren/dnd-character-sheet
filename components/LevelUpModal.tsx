@@ -30,6 +30,7 @@ interface Props {
   totalLevel: number
   statScores: Record<StatKey, number>
   hpMax: number
+  allowedSources?: string[]
   characterClasses: CharacterClassRow[]
   onClose: () => void
   onLevelUpComplete: (newLevel: number, hpGained: number) => void
@@ -53,6 +54,16 @@ const STAT_LABELS: Record<StatKey, string> = {
   WIS: 'Wisdom',
   CHA: 'Charisma',
 }
+
+// Core WotC sources always shown regardless of character preferences.
+const OFFICIAL_SOURCES = ['PHB', 'PHB24', 'BR', 'DMG', 'DMG24', 'MM', 'SRD']
+
+// Used when allowedSources prop is absent (e.g. character pre-dates the column).
+// Covers all major WotC releases; excludes third-party / homebrew by default.
+const DEFAULT_ALLOWED_SOURCES = [
+  'PHB', 'PHB24', 'BR', 'XGE', 'TCE', 'SCAG', 'GGtR',
+  'EGtW', 'MOoT', 'FToD', 'VRGtR', 'SCC', 'DMG', 'SRD',
+]
 
 const SUBCLASS_SUGGESTIONS: Partial<Record<ClassName, string[]>> = {
   Barbarian: ['Path of the Berserker', 'Path of the Totem Warrior', 'Path of the Storm Herald'],
@@ -111,6 +122,7 @@ export default function LevelUpModal({
   totalLevel,
   statScores,
   hpMax,
+  allowedSources,
   characterClasses,
   onClose,
   onLevelUpComplete,
@@ -177,9 +189,17 @@ export default function LevelUpModal({
       .then(({ data, error: fetchErr }: { data: unknown; error: unknown }) => {
         if (cancelled) return
         if (!fetchErr && Array.isArray(data) && data.length > 0) {
-          setDbSubclasses(
+          const effectiveSources = (allowedSources && allowedSources.length > 0)
+            ? allowedSources
+            : DEFAULT_ALLOWED_SOURCES
+          const filtered = (
             data as Array<{ id: string; name: string; description: string | null; source: string | null }>
+          ).filter((s) =>
+            !s.source ||
+            OFFICIAL_SOURCES.includes(s.source) ||
+            effectiveSources.includes(s.source)
           )
+          setDbSubclasses(filtered)
         }
         setLoadingSubclasses(false)
         setSubclassFetchDone(true)

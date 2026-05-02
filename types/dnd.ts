@@ -13,6 +13,7 @@ export interface Database {
           level: number
           background: string
           skill_proficiencies: string[] | null
+          allowed_sources: string[] | null
           created_at: string
         }
         Insert: {
@@ -24,6 +25,7 @@ export interface Database {
           level?: number
           background: string
           skill_proficiencies?: string[] | null
+          allowed_sources?: string[] | null
           created_at?: string
         }
         Update: {
@@ -35,6 +37,7 @@ export interface Database {
           level?: number
           background?: string
           skill_proficiencies?: string[] | null
+          allowed_sources?: string[] | null
           created_at?: string
         }
         Relationships: []

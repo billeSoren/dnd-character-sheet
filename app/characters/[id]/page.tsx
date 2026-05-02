@@ -4,6 +4,13 @@ import CharacterSheet from '@/components/CharacterSheet'
 import { notFound, redirect } from 'next/navigation'
 import { calculateAC } from '@/lib/ac-calculator'
 
+// Official WotC core sources always included as fallback for characters
+// created before the allowed_sources column existed.
+const FALLBACK_ALLOWED_SOURCES = [
+  'PHB', 'PHB24', 'BR', 'XGE', 'TCE', 'SCAG', 'GGtR',
+  'EGtW', 'MOoT', 'FToD', 'VRGtR', 'SCC', 'DMG', 'SRD',
+]
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function profBonus(level: number) {
@@ -289,6 +296,9 @@ async function renderCharacterPage({ id }: { id: string }) {
         created_at: e.created_at as string,
       }))}
       characterClasses={characterClassList}
+      allowedSources={toArr(character!.allowed_sources).length > 0
+        ? toArr(character!.allowed_sources)
+        : FALLBACK_ALLOWED_SOURCES}
       classInfo={classRow ? {
         description: classRow.description ?? '',
         hit_die: classRow.hit_die ?? 8,

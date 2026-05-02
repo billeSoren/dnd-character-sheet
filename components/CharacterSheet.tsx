@@ -65,6 +65,7 @@ export interface CharacterSheetProps {
   initialItems:      CharacterItemWithItem[]
   initialActiveEffects: CharacterActiveEffect[]
   characterClasses:  CharacterClass[]
+  allowedSources:    string[]
   classInfo:         {
     description: string; hit_die: number
     armor_proficiencies: string; weapon_proficiencies: string
@@ -102,6 +103,7 @@ export default function CharacterSheet(props: CharacterSheetProps) {
     character, statScores, hp, profBonus, initiative, speed,
     passivePerception, savingThrows, skillList, spellSlots,
     initialItems = [], initialActiveEffects = [], characterClasses = [],
+    allowedSources = [],
     classInfo, raceInfo,
   } = props
 
@@ -178,6 +180,7 @@ export default function CharacterSheet(props: CharacterSheetProps) {
           passivePerception={passivePerception}
           classInfo={classInfo}
           characterClasses={characterClasses}
+          allowedSources={allowedSources}
         />
 
         {/* ═══ CENTRE COLUMN ══════════════════════════════════════ */}
@@ -220,11 +223,12 @@ interface LeftPanelProps {
   passivePerception: number
   classInfo:       CharacterSheetProps['classInfo']
   characterClasses: CharacterClass[]
+  allowedSources:  string[]
 }
 
 function LeftPanel({
   character, statScores, hp, profBonus, initiative, acResult, activeEffects, setActiveEffects,
-  speed, passivePerception, classInfo, characterClasses,
+  speed, passivePerception, classInfo, characterClasses, allowedSources,
 }: LeftPanelProps) {
   const router  = useRouter()
   const [deleteOpen,   setDeleteOpen]   = useState(false)
@@ -383,6 +387,7 @@ function LeftPanel({
           characterClasses={characterClasses}
           statScores={statScores}
           hpMax={hp.max}
+          allowedSources={allowedSources}
           onClose={() => setLevelUpOpen(false)}
         />
       )}
@@ -607,12 +612,13 @@ function ActiveEffectsPanel({
 // ── Level Up Modal Wrapper ─────────────────────────────────────────────────────
 
 function LevelUpModalWrapper({
-  character, characterClasses, statScores, hpMax, onClose,
+  character, characterClasses, statScores, hpMax, allowedSources, onClose,
 }: {
   character: CharacterData
   characterClasses: CharacterClass[]
   statScores: Record<StatKey, number>
   hpMax: number
+  allowedSources: string[]
   onClose: () => void
 }) {
   const primaryClass = characterClasses.find((c) => c.is_primary)?.class_name ?? character.class
@@ -624,6 +630,7 @@ function LevelUpModalWrapper({
       totalLevel={character.level}
       statScores={statScores}
       hpMax={hpMax}
+      allowedSources={allowedSources}
       characterClasses={characterClasses as unknown as { id: string; character_id: string; class_name: string; level: number; is_primary: boolean; subclass: string | null; hit_die: number; class_id: string | null }[]}
       onClose={onClose}
       onLevelUpComplete={() => { onClose(); window.location.reload() }}

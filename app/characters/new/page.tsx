@@ -149,6 +149,7 @@ export default function NewCharacterPage() {
         level: formData.level,
         background: formData.background,
         skill_proficiencies: allSkills,
+        allowed_sources: formData.allowedSources,
       })
       .select()
       .single()

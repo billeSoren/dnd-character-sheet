@@ -94,12 +94,12 @@ export default function MagicItemBrowser({ onAdd }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search items…"
-          className="flex-1 px-3 py-2 bg-dnd-subtle border border-dnd-border rounded-lg text-sm text-dnd-text placeholder:text-dnd-muted/50 outline-none focus:border-dnd-accent transition-colors"
+          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder:text-gray-500 outline-none focus:border-dnd-accent transition-colors"
         />
         <select
           value={rarity}
           onChange={(e) => setRarity(e.target.value)}
-          className="px-3 py-2 bg-dnd-subtle border border-dnd-border rounded-lg text-sm text-dnd-text outline-none focus:border-dnd-accent transition-colors"
+          className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white outline-none focus:border-dnd-accent transition-colors"
         >
           <option value="">All Rarities</option>
           {RARITIES.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -107,7 +107,7 @@ export default function MagicItemBrowser({ onAdd }: Props) {
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="px-3 py-2 bg-dnd-subtle border border-dnd-border rounded-lg text-sm text-dnd-text outline-none focus:border-dnd-accent transition-colors"
+          className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white outline-none focus:border-dnd-accent transition-colors"
         >
           <option value="">All Types</option>
           {ITEM_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -115,7 +115,7 @@ export default function MagicItemBrowser({ onAdd }: Props) {
         <select
           value={attunement}
           onChange={(e) => setAttunement(e.target.value as '' | 'yes' | 'no')}
-          className="px-3 py-2 bg-dnd-subtle border border-dnd-border rounded-lg text-sm text-dnd-text outline-none focus:border-dnd-accent transition-colors"
+          className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white outline-none focus:border-dnd-accent transition-colors"
         >
           <option value="">Attunement: Any</option>
           <option value="yes">Required</option>
@@ -137,9 +137,9 @@ export default function MagicItemBrowser({ onAdd }: Props) {
             <button
               type="button"
               onClick={() => toggleExpand(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors hover:bg-dnd-accent/5 ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors hover:bg-white/5 ${
                 rarityBorder(item.rarity)
-              } bg-dnd-subtle`}
+              } bg-gray-800`}
             >
               {/* Rarity dot */}
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${rarityColor(item.rarity).replace('text-', 'bg-')}`} />
@@ -185,7 +185,7 @@ export default function MagicItemBrowser({ onAdd }: Props) {
 
             {/* Expanded description */}
             {expanded === item.id && (
-              <div className="mx-1 px-4 py-3 border border-t-0 border-dnd-border rounded-b-lg bg-dnd-bg">
+              <div className="mx-1 px-4 py-3 border border-t-0 border-gray-700 rounded-b-lg bg-gray-900">
                 <p className="text-xs text-dnd-text leading-relaxed whitespace-pre-wrap">
                   {item.description ?? 'No description available.'}
                 </p>

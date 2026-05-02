@@ -63,6 +63,22 @@ export const PB_COST: Record<number, number> = {
 }
 export const PB_BUDGET = 27
 
+export interface CustomLineageChoices {
+  abilityBonuses: Partial<Record<StatKey, number>>
+  skillProficiency: string
+  feat: string
+  darkvision: boolean
+  description: string
+}
+
+export const DEFAULT_CUSTOM_LINEAGE: CustomLineageChoices = {
+  abilityBonuses: {},
+  skillProficiency: '',
+  feat: '',
+  darkvision: false,
+  description: '',
+}
+
 export interface CharacterFormData {
   // Step 0 — preferences
   edition: Edition
@@ -81,6 +97,7 @@ export interface CharacterFormData {
   // Step 3
   race: string
   raceId: string | null
+  customLineageChoices: CustomLineageChoices
   // Step 4
   abilityMethod: AbilityMethod
   baseStats: Record<StatKey, number>
@@ -105,6 +122,7 @@ export const DEFAULT_FORM_DATA: CharacterFormData = {
   backgroundId: null,
   race: '',
   raceId: null,
+  customLineageChoices: DEFAULT_CUSTOM_LINEAGE,
   abilityMethod: 'standard',
   baseStats: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 },
   standardArrayAssignments: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },

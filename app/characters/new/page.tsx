@@ -120,8 +120,11 @@ export default function NewCharacterPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
 
+    const isCustomOrigin = ['Custom Lineage', 'Custom'].includes(formData.race)
     const racialBonus = (stat: StatKey): number =>
-      selectedRace?.ability_bonuses?.[stat] ?? 0
+      isCustomOrigin
+        ? (formData.customLineageChoices.abilityBonuses[stat] ?? 0)
+        : (selectedRace?.ability_bonuses?.[stat] ?? 0)
 
     const finalStats = {
       STR: formData.baseStats.STR + racialBonus('STR'),

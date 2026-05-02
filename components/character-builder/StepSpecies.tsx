@@ -29,10 +29,58 @@ const RACE_DESCRIPTIONS: Record<string, string> = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-/** "HALF-ELF (VARIANT: DROW DESCENT)" → "HALF-ELF" */
+// Maps sub-race names (uppercase) to their parent group label (uppercase).
+// Used by baseName() so that e.g. "Hill Dwarf" and "Mountain Dwarf" both
+// collapse under the "DWARF" group header.
+const PARENT_RACE_MAP: Record<string, string> = {
+  // Dwarf
+  'HILL DWARF': 'DWARF', 'MOUNTAIN DWARF': 'DWARF',
+  'DUERGAR': 'DWARF', 'DUERGAR (GRAY DWARF)': 'DWARF',
+  // Elf
+  'HIGH ELF': 'ELF', 'WOOD ELF': 'ELF',
+  'DARK ELF': 'ELF', 'DARK ELF (DROW)': 'ELF', 'DROW': 'ELF',
+  // Halfling
+  'LIGHTFOOT HALFLING': 'HALFLING', 'STOUT HALFLING': 'HALFLING',
+  'MARK OF HEALING HALFLING': 'HALFLING', 'MARK OF HOSPITALITY HALFLING': 'HALFLING',
+  // Gnome
+  'FOREST GNOME': 'GNOME', 'ROCK GNOME': 'GNOME',
+  'DEEP GNOME': 'GNOME', 'SVIRFNEBLIN': 'GNOME',
+  // Dragonborn
+  'BLACK DRAGONBORN': 'DRAGONBORN', 'BLUE DRAGONBORN': 'DRAGONBORN',
+  'BRASS DRAGONBORN': 'DRAGONBORN', 'BRONZE DRAGONBORN': 'DRAGONBORN',
+  'COPPER DRAGONBORN': 'DRAGONBORN', 'GOLD DRAGONBORN': 'DRAGONBORN',
+  'GREEN DRAGONBORN': 'DRAGONBORN', 'RED DRAGONBORN': 'DRAGONBORN',
+  'SILVER DRAGONBORN': 'DRAGONBORN', 'WHITE DRAGONBORN': 'DRAGONBORN',
+  'CHROMATIC DRAGONBORN': 'DRAGONBORN', 'METALLIC DRAGONBORN': 'DRAGONBORN',
+  'GEM DRAGONBORN': 'DRAGONBORN',
+  'DRACONBLOOD DRAGONBORN': 'DRAGONBORN', 'RAVENITE DRAGONBORN': 'DRAGONBORN',
+  // Half-Orc (maps to itself so it stays uppercase-consistent with the rest)
+  'HALF-ORC': 'HALF-ORC',
+  // Human variants
+  'VARIANT HUMAN': 'HUMAN',
+  'MARK OF FINDING HUMAN': 'HUMAN', 'MARK OF HANDLING HUMAN': 'HUMAN',
+  'MARK OF MAKING HUMAN': 'HUMAN', 'MARK OF PASSAGE HUMAN': 'HUMAN',
+  'MARK OF SENTINEL HUMAN': 'HUMAN',
+  // Aasimar
+  'PROTECTOR AASIMAR': 'AASIMAR', 'SCOURGE AASIMAR': 'AASIMAR', 'FALLEN AASIMAR': 'AASIMAR',
+  'AASIMAR (PROTECTOR)': 'AASIMAR', 'AASIMAR (SCOURGE)': 'AASIMAR', 'AASIMAR (FALLEN)': 'AASIMAR',
+  // Shifter
+  'BEASTHIDE SHIFTER': 'SHIFTER', 'LONGTOOTH SHIFTER': 'SHIFTER',
+  'SWIFTSTRIDE SHIFTER': 'SHIFTER', 'WILDHUNT SHIFTER': 'SHIFTER',
+  'SHIFTER (BEASTHIDE)': 'SHIFTER', 'SHIFTER (SWIFTSTRIDE)': 'SHIFTER',
+  'SHIFTER (WILDHUNT)': 'SHIFTER',
+}
+
+/**
+ * Returns the uppercase parent-group label for a race name.
+ * "Hill Dwarf" → "DWARF", "Black Dragonborn" → "DRAGONBORN",
+ * "Half-Elf (Variant: Drow)" → "HALF-ELF"
+ */
 function baseName(name: string): string {
-  const idx = name.indexOf(' (')
-  return idx === -1 ? name : name.slice(0, idx)
+  const upper = name.toUpperCase().trim()
+  if (PARENT_RACE_MAP[upper]) return PARENT_RACE_MAP[upper]
+  // Strip everything from "(" onward (handles "Half-Elf (Variant: …)" etc.)
+  return upper.split('(')[0].trim()
 }
 
 /** "HALF-ELF" → "Half-Elf" for icon/description lookup */

@@ -76,14 +76,13 @@ export async function fetchClasses(sources?: string[]): Promise<DndClass[]> {
   return Array.from(seen.values())
 }
 
+// Exact codes as they exist in the DB; unknown sources rank last (Infinity)
 const BG_RACE_PRIORITY = [
   'PHB24', 'PHB',
-  'TCE', 'TCoE', 'XGE', 'XGtE',
-  'SCAG', 'GGtR', 'RftLW', 'ERLW', 'EGtW',
-  'MOT', 'MOoT', 'VGtM', 'MToF', 'FToD',
-  'MotM', 'MPMM', 'VRGtR', 'SCC', 'SCoC', 'JttRC',
-  'FOA', 'D&DV', 'BHC', 'BR', 'wiki',
-  // null / unknown sources rank last (indexOf returns -1 → Infinity)
+  'TCE', 'XGE', 'SCAG', 'GGtR', 'ERLW', 'EGtW',
+  'MOoT', 'VGtM', 'MToF', 'FToD', 'MotM', 'VRGtR',
+  'SCC', 'JttRC', 'SAiS', 'BoMT', 'BGG', 'FRHoF',
+  'FOA', 'D&DV', 'BHC', 'GH55', 'WGE', 'BR',
 ]
 
 function dedup<T extends { name: string; source: string }>(rows: T[]): T[] {
@@ -98,29 +97,33 @@ function dedup<T extends { name: string; source: string }>(rows: T[]): T[] {
   return Array.from(seen.values())
 }
 
-// Backgrounds and races always show all entries regardless of edition —
-// source filtering only applies to classes (rules differ per edition).
-export async function fetchBackgrounds(): Promise<DndBackground[]> {
+export async function fetchBackgrounds(sources?: string[]): Promise<DndBackground[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabase
     .from('backgrounds')
     .select(
       'id, name, source, description, skill_proficiencies, ' +
       'tool_proficiencies, languages, feature_name, feature_description'
     )
     .order('name')
+  if (sources?.length) q = q.in('source', sources)
+  const { data, error } = await q
   if (error) throw new Error(`fetchBackgrounds: ${error.message}`)
   return dedup((data ?? []) as unknown as DndBackground[])
 }
 
-export async function fetchRaces(): Promise<DndRace[]> {
+export async function fetchRaces(sources?: string[]): Promise<DndRace[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabase
     .from('races')
     .select(
       'id, name, source, ability_bonuses, speed, size, traits, languages, description'
     )
     .order('name')
+  if (sources?.length) q = q.in('source', sources)
+  const { data, error } = await q
   if (error) throw new Error(`fetchRaces: ${error.message}`)
   return dedup((data ?? []) as unknown as DndRace[])
 }

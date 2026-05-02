@@ -8,41 +8,42 @@ const BASE_SOURCES: Record<Edition, string[]> = {
   '5e':   ['PHB', 'BR'],
   '5.5e': ['PHB24', 'BR'],
 }
-const EXPANDED_SOURCES = [
-  'XGE', 'XGtE',         // Xanathar's Guide to Everything
-  'TCE', 'TCoE',         // Tasha's Cauldron of Everything
-  'SCAG',                // Sword Coast Adventurer's Guide
-  'GGtR',                // Guildmasters' Guide to Ravnica
-  'RftLW', 'ERLW',       // Eberron: Rising from the Last War
-  'EGtW',                // Explorer's Guide to Wildemount
-  'MOT', 'MOoT',         // Mythic Odysseys of Theros
-  'VGtM',                // Volo's Guide to Monsters
-  'MToF',                // Mordenkainen's Tome of Foes
-  'FToD',                // Fizban's Treasury of Dragons
-  'MotM', 'MPMM',        // Mordenkainen Presents: Monsters of the Multiverse
-  'VRGtR',               // Van Richten's Guide to Ravenloft
-  'SCC', 'SCoC',         // Strixhaven
-  'JttRC',               // Journeys Through the Radiant Citadel
+
+// Exact source codes as they exist in the database
+export const EXPANDED_SOURCES = [
+  'XGE', 'TCE', 'VGtM', 'MToF', 'FToD', 'MotM',
+  'BoMT', 'FRHoF', 'BGG',
 ]
-const THIRD_PARTY_SOURCES = [
-  'FOA',                 // Forgotten Adventures
-  'D&DV',                // D&D Vault
-  'BHC',                 // Blood Hunter Class (Matt Mercer)
-  'VOM',                 // Vault of Magic (Kobold Press)
-  'TOH',                 // Tome of Heroes (Kobold Press)
-  // A5E (Level Up: Advanced 5th Edition) is excluded from all views
+
+export const SETTING_SOURCES = [
+  'SCAG', 'GGtR', 'ERLW', 'EGtW', 'MOoT',
+  'WGE', 'VRGtR', 'SCC', 'AitM', 'SAiS',
+]
+
+export const ADVENTURE_SOURCES = [
+  'AI', 'GH55', 'BGDiA', 'COA', 'CoS', 'WBtW',
+  'ABH', 'ToA', 'CBT', 'DC', 'WDMM', 'WDH', 'SKT',
+  'TftYP', 'IDRotF', 'CRCotN', 'PaBtSO',
+  'NF', 'LFL', 'FRAiF', 'AAtM',
+]
+
+export const THIRD_PARTY_SOURCES = [
+  'FOA', 'D&DV', 'BHC', 'VOM', 'TOH', 'GH55',
 ]
 
 export function computeAllowedSources(
   edition: Edition,
   expandedRules: boolean,
   thirdParty: boolean,
+  selectedBooks: string[] = [],
 ): string[] {
-  return [
+  // Use Set to deduplicate (e.g. BGG appears in both EXPANDED and ADVENTURE)
+  return Array.from(new Set([
     ...BASE_SOURCES[edition],
     ...(expandedRules && edition === '5e' ? EXPANDED_SOURCES : []),
     ...(thirdParty ? THIRD_PARTY_SOURCES : []),
-  ]
+    ...selectedBooks,
+  ]))
 }
 
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const
@@ -57,6 +58,7 @@ export interface CharacterFormData {
   edition: Edition
   expandedRules: boolean
   thirdParty: boolean
+  selectedBooks: string[]      // adventure + setting books individually checked
   allowedSources: string[]
   advancementType: AdvancementType
   hitPointType: HitPointType
@@ -83,6 +85,7 @@ export const DEFAULT_FORM_DATA: CharacterFormData = {
   edition: '5e',
   expandedRules: false,
   thirdParty: false,
+  selectedBooks: [],
   allowedSources: ['PHB', 'BR'],
   advancementType: 'milestone',
   hitPointType: 'fixed',

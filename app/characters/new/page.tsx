@@ -69,7 +69,7 @@ export default function NewCharacterPage() {
   const loadData = useCallback((sources: string[]) => {
     setDataLoading(true)
     setDataError('')
-    Promise.all([fetchClasses(sources), fetchBackgrounds(), fetchRaces()])
+    Promise.all([fetchClasses(sources), fetchBackgrounds(sources), fetchRaces(sources)])
       .then(([cls, bgs, races]) => {
         setDbClasses(cls)
         setDbBackgrounds(bgs)

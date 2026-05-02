@@ -17,14 +17,24 @@ export const EXPANDED_SOURCES = [
 
 export const SETTING_SOURCES = [
   'SCAG', 'GGtR', 'ERLW', 'EGtW', 'MOoT',
-  'WGE', 'VRGtR', 'SCC', 'AitM', 'SAiS',
+  'WGE', 'VRGtR', 'SCC', 'SAiS', 'PAitM',
+  'AI', 'FRAiF',
+]
+
+// Expanded-rules sourcebooks (also covered by the "Expanded Rules" checkbox wholesale)
+export const EXPANDED_BOOK_SOURCES = [
+  'BGG', 'FRHoF', 'BoMT',
 ]
 
 export const ADVENTURE_SOURCES = [
-  'AI', 'GH55', 'BGDiA', 'COA', 'CoS', 'WBtW',
-  'ABH', 'ToA', 'CBT', 'DC', 'WDMM', 'WDH', 'SKT',
-  'TftYP', 'IDRotF', 'CRCotN', 'PaBtSO',
-  'NF', 'LFL', 'FRAiF', 'AAtM',
+  'GH55', 'BGDiA', 'COA', 'CoS', 'WBtW',
+  'ToA', 'IDRotF', 'SKT', 'WDMM', 'WDH',
+  'TftYP', 'CRCotN', 'PaBtSO', 'DC',
+]
+
+// Digital / standalone releases
+export const MISC_SOURCES = [
+  'ABH', 'NF', 'LFL', 'AAtM',
 ]
 
 export const THIRD_PARTY_SOURCES = [
@@ -37,7 +47,7 @@ export function computeAllowedSources(
   thirdParty: boolean,
   selectedBooks: string[] = [],
 ): string[] {
-  // Use Set to deduplicate (e.g. BGG appears in both EXPANDED and ADVENTURE)
+  // Use Set to deduplicate (selectedBooks may overlap with EXPANDED_SOURCES)
   return Array.from(new Set([
     ...BASE_SOURCES[edition],
     ...(expandedRules && edition === '5e' ? EXPANDED_SOURCES : []),

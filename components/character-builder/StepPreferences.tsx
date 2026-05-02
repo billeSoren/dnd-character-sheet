@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import {
   CharacterFormData, Edition, AdvancementType, HitPointType,
-  computeAllowedSources, SETTING_SOURCES, ADVENTURE_SOURCES,
+  computeAllowedSources,
+  SETTING_SOURCES, EXPANDED_BOOK_SOURCES, ADVENTURE_SOURCES, MISC_SOURCES,
 } from './types'
 
 interface Props {
@@ -30,41 +31,44 @@ const EDITION_CONFIG: Record<Edition, {
   },
 }
 
-// Friendly display names for source codes shown in the book picker
 const SOURCE_NAMES: Record<string, string> = {
-  // Setting
+  // ── Setting books ──────────────────────────────────────────────────────
   SCAG:  "Sword Coast Adventurer's Guide",
   GGtR:  "Guildmasters' Guide to Ravnica",
-  ERLW:  "Eberron: Rising from the Last War",
+  ERLW:  'Eberron: Rising from the Last War',
   EGtW:  "Explorer's Guide to Wildemount",
   MOoT:  'Mythic Odysseys of Theros',
   WGE:   "Wayfinder's Guide to Eberron",
   VRGtR: "Van Richten's Guide to Ravenloft",
   SCC:   'Strixhaven: Curriculum of Chaos',
-  AitM:  'Acquisitions Incorporated',
   SAiS:  'Spelljammer: Adventures in Space',
-  // Adventure
-  AI:     'Acquisitions Incorporated',
-  GH55:   'Ghosts of Saltmarsh',
-  BGDiA:  "Baldur's Gate: Descent into Avernus",
-  COA:    'Chains of Asmodeus',
-  CoS:    'Curse of Strahd',
-  WBtW:   'The Wild Beyond the Witchlight',
-  ABH:    'A Belltower in Hillsfar',
-  ToA:    'Tomb of Annihilation',
-  CBT:    'Candlekeep Mysteries',
-  DC:     'Dragon+: Gnomengarde',
-  WDMM:   'Waterdeep: Dungeon of the Mad Mage',
-  WDH:    'Waterdeep: Dragon Heist',
-  SKT:    "Storm King's Thunder",
-  TftYP:  'Tales from the Yawning Portal',
-  IDRotF: 'Icewind Dale: Rime of the Frostmaiden',
-  CRCotN: 'Critical Role: Call of the Netherdeep',
-  PaBtSO: 'Phandelver and Below',
-  NF:     'Netheril: Empire of Magic',
-  LFL:    'Lorwyn: Five Leaves Left',
-  FRAiF:  'Adventures in Faerûn',
-  AAtM:   'Adventure Atlas: The Mortuary',
+  PAitM: 'Planescape: Adventures in the Multiverse',
+  AI:    'Acquisitions Incorporated',
+  FRAiF: 'Forgotten Realms: Adventures in Faerûn',
+  // ── Expanded-rules books ───────────────────────────────────────────────
+  BGG:   'Bigby Presents: Glory of the Giants',
+  FRHoF: 'Forgotten Realms: Heroes of Faerûn',
+  BoMT:  'The Book of Many Things',
+  // ── Adventure books ────────────────────────────────────────────────────
+  GH55:    'Ghosts of Saltmarsh',
+  BGDiA:   "Baldur's Gate: Descent into Avernus",
+  COA:     'Chains of Asmodeus',
+  CoS:     'Curse of Strahd',
+  WBtW:    'The Wild Beyond the Witchlight',
+  ToA:     'Tomb of Annihilation',
+  IDRotF:  'Icewind Dale: Rime of the Frostmaiden',
+  SKT:     "Storm King's Thunder",
+  WDMM:    'Waterdeep: Dungeon of the Mad Mage',
+  WDH:     'Waterdeep: Dragon Heist',
+  TftYP:   'Tales from the Yawning Portal',
+  CRCotN:  'Critical Role: Call of the Netherdeep',
+  PaBtSO:  'Phandelver and Below',
+  DC:      'Dragon+: Gnomengarde',
+  // ── Digital / misc ─────────────────────────────────────────────────────
+  ABH:  "Astarion's Book of Hungers",
+  NF:   "Netheril's Fall",
+  LFL:  'Lorwyn: First Light',
+  AAtM: 'Adventure Atlas: The Mortuary',
 }
 
 function Checkbox({
@@ -170,6 +174,30 @@ function BookCheckbox({ code, checked, onToggle }: {
     </button>
   )
 }
+
+function BookGrid({ codes, selectedBooks, onToggle }: {
+  codes: string[]; selectedBooks: string[]; onToggle: (code: string) => void
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-1.5">
+      {codes.map((code) => (
+        <BookCheckbox
+          key={code}
+          code={code}
+          checked={selectedBooks.includes(code)}
+          onToggle={onToggle}
+        />
+      ))}
+    </div>
+  )
+}
+
+const BOOK_SECTIONS: { label: string; codes: string[] }[] = [
+  { label: 'Setting Books',        codes: SETTING_SOURCES       },
+  { label: 'Expanded Rules Books', codes: EXPANDED_BOOK_SOURCES },
+  { label: 'Adventure Books',      codes: ADVENTURE_SOURCES     },
+  { label: 'Digital / Misc',       codes: MISC_SOURCES          },
+]
 
 export default function StepPreferences({ data, onChange, onStart, startError }: Props) {
   const [booksOpen, setBooksOpen] = useState(false)
@@ -286,7 +314,7 @@ export default function StepPreferences({ data, onChange, onStart, startError }:
             disabled={data.edition !== '5e'}
             onChange={setExpandedRules}
             label="Expanded Rules"
-            description="XGE, TCE, VGtM, MToF, MotM, BoMT, FRHoF, BGG and more — 5e only"
+            description="XGE, TCE, VGtM, MToF, MotM, BGG, FRHoF, BoMT and more — 5e only"
           />
           <Checkbox
             checked={data.thirdParty}
@@ -310,7 +338,7 @@ export default function StepPreferences({ data, onChange, onStart, startError }:
         </div>
       </div>
 
-      {/* Adventure & Setting Books */}
+      {/* Adventure & Setting Books — collapsible */}
       <div>
         <button
           type="button"
@@ -336,42 +364,15 @@ export default function StepPreferences({ data, onChange, onStart, startError }:
         </button>
 
         {booksOpen && (
-          <div className="mt-3 space-y-4">
-
-            {/* Setting Books */}
-            <div>
-              <p className="text-[10px] font-semibold text-dnd-muted uppercase tracking-widest mb-2">
-                Setting Books
-              </p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {SETTING_SOURCES.map((code) => (
-                  <BookCheckbox
-                    key={code}
-                    code={code}
-                    checked={data.selectedBooks.includes(code)}
-                    onToggle={toggleBook}
-                  />
-                ))}
+          <div className="mt-3 space-y-5">
+            {BOOK_SECTIONS.map(({ label, codes }) => (
+              <div key={label}>
+                <p className="text-[10px] font-semibold text-dnd-muted uppercase tracking-widest mb-2">
+                  {label}
+                </p>
+                <BookGrid codes={codes} selectedBooks={data.selectedBooks} onToggle={toggleBook} />
               </div>
-            </div>
-
-            {/* Adventure Books */}
-            <div>
-              <p className="text-[10px] font-semibold text-dnd-muted uppercase tracking-widest mb-2">
-                Adventure Books
-              </p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {ADVENTURE_SOURCES.map((code) => (
-                  <BookCheckbox
-                    key={code}
-                    code={code}
-                    checked={data.selectedBooks.includes(code)}
-                    onToggle={toggleBook}
-                  />
-                ))}
-              </div>
-            </div>
-
+            ))}
           </div>
         )}
       </div>

@@ -28,6 +28,9 @@ const THIRD_PARTY_SOURCES = [
   'FOA',                 // Forgotten Adventures
   'D&DV',                // D&D Vault
   'BHC',                 // Blood Hunter Class (Matt Mercer)
+  'VOM',                 // Vault of Magic (Kobold Press)
+  'TOH',                 // Tome of Heroes (Kobold Press)
+  // A5E (Level Up: Advanced 5th Edition) is excluded from all views
 ]
 
 export function computeAllowedSources(

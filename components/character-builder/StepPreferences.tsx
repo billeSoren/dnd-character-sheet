@@ -196,7 +196,7 @@ export default function StepPreferences({ data, onChange, onStart, startError }:
             checked={data.thirdParty}
             onChange={setThirdParty}
             label="Third-Party & Partnered Content"
-            description="FOA, BHC (Blood Hunter), D&DV and other non-WotC sources"
+            description="BHC (Blood Hunter), D&DV, FOA, VOM (Vault of Magic), TOH (Tome of Heroes) and other non-WotC sources"
           />
           {/* Homebrew — coming soon */}
           <div className="flex items-start gap-3 p-3.5 rounded-lg border border-dnd-border/40 bg-dnd-subtle opacity-40 cursor-not-allowed select-none">

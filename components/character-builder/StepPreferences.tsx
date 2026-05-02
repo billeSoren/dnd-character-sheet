@@ -18,12 +18,12 @@ const EDITION_CONFIG: Record<Edition, {
   '5e': {
     label: '5e Classic (2014)',
     tagline: "Original rules. Includes Xanathar's & Tasha's content.",
-    sources: 'PHB · BR · XGE · TCE · FOA · BHC',
+    sources: 'PHB · BR · XGE · TCE',
     badge: null,
   },
   '5.5e': {
     label: '5.5e Updated Rules (2024)',
-    tagline: 'Revised 2024 rules with updated classes and species.',
+    tagline: 'Revised 2024 rules with updated classes and races.',
     sources: 'PHB24 · BR',
     badge: 'NEWEST',
   },
@@ -190,13 +190,13 @@ export default function StepPreferences({ data, onChange, onStart, startError }:
             disabled={data.edition !== '5e'}
             onChange={setExpandedRules}
             label="Expanded Rules"
-            description="TCE (Tasha's), XGE (Xanathar's), FOA — 5e only"
+            description="TCE (Tasha's), XGE (Xanathar's) — 5e only"
           />
           <Checkbox
             checked={data.thirdParty}
             onChange={setThirdParty}
             label="Third-Party & Partnered Content"
-            description="BHC (Blood Hunter), D&DV and other non-WotC sources"
+            description="FOA, BHC (Blood Hunter), D&DV and other non-WotC sources"
           />
           {/* Homebrew — coming soon */}
           <div className="flex items-start gap-3 p-3.5 rounded-lg border border-dnd-border/40 bg-dnd-subtle opacity-40 cursor-not-allowed select-none">

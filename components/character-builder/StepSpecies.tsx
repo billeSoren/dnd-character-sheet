@@ -34,8 +34,8 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
   if (loading) {
     return (
       <StepLoadingSkeleton
-        title="Choose a Species"
-        description="Your species grants your character unique ability bonuses and racial traits."
+        title="Choose a Race"
+        description="Your race grants your character unique ability bonuses and racial traits."
       />
     )
   }
@@ -61,8 +61,8 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-dnd-text mb-1">Choose a Species</h2>
-        <p className="text-dnd-muted text-sm">Your species grants your character unique ability bonuses and racial traits.</p>
+        <h2 className="text-xl font-bold text-dnd-text mb-1">Choose a Race</h2>
+        <p className="text-dnd-muted text-sm">Your race grants your character unique ability bonuses and racial traits.</p>
       </div>
       <SelectionList
         items={items}
@@ -71,7 +71,7 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
           const race = races.find((r) => r.name === name)
           onChange({ race: name, raceId: race?.id ?? null })
         }}
-        placeholder="Search species…"
+        placeholder="Search races…"
       />
     </div>
   )

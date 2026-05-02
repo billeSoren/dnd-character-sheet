@@ -17,14 +17,14 @@ import StepAbilities from '@/components/character-builder/StepAbilities'
 import StepFinish from '@/components/character-builder/StepFinish'
 import ThemeToggle from '@/components/ThemeToggle'
 
-const TABS = ['CLASS', 'BACKGROUND', 'SPECIES', 'ABILITIES', 'EQUIPMENT'] as const
+const TABS = ['CLASS', 'BACKGROUND', 'RACES', 'ABILITIES', 'EQUIPMENT'] as const
 const TOTAL_STEPS = TABS.length
 
 function validateStep(step: number, data: CharacterFormData): string | null {
   switch (step) {
     case 1: return data.className ? null : 'Select a class to continue.'
     case 2: return data.background ? null : 'Select a background to continue.'
-    case 3: return data.race ? null : 'Select a species to continue.'
+    case 3: return data.race ? null : 'Select a race to continue.'
     case 4: {
       if (data.abilityMethod === 'standard') {
         const allAssigned = STANDARD_ARRAY.length === 6 &&
@@ -69,7 +69,7 @@ export default function NewCharacterPage() {
   const loadData = useCallback((sources: string[]) => {
     setDataLoading(true)
     setDataError('')
-    Promise.all([fetchClasses(sources), fetchBackgrounds(sources), fetchRaces(sources)])
+    Promise.all([fetchClasses(sources), fetchBackgrounds(), fetchRaces()])
       .then(([cls, bgs, races]) => {
         setDbClasses(cls)
         setDbBackgrounds(bgs)

@@ -136,7 +136,7 @@ export default function StepFinish({
         <div className="px-4 py-3 border-b border-dnd-border flex flex-wrap gap-4 text-sm">
           <span><span className="text-dnd-muted">Class:</span> <strong className="text-dnd-text">{data.className || '—'}</strong></span>
           <span><span className="text-dnd-muted">Background:</span> <strong className="text-dnd-text">{data.background || '—'}</strong></span>
-          <span><span className="text-dnd-muted">Species:</span> <strong className="text-dnd-text">{data.race || '—'}</strong></span>
+          <span><span className="text-dnd-muted">Race:</span> <strong className="text-dnd-text">{data.race || '—'}</strong></span>
           <span><span className="text-dnd-muted">HP:</span> <strong className="text-dnd-accent text-base">{maxHP}</strong></span>
         </div>
 

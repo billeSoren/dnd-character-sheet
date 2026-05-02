@@ -8,8 +8,8 @@ const BASE_SOURCES: Record<Edition, string[]> = {
   '5e':   ['PHB', 'BR'],
   '5.5e': ['PHB24', 'BR'],
 }
-const EXPANDED_SOURCES   = ['TCE', 'XGE', 'FOA']
-const THIRD_PARTY_SOURCES = ['BHC', 'D&DV']
+const EXPANDED_SOURCES    = ['TCE', 'XGE']
+const THIRD_PARTY_SOURCES = ['FOA', 'BHC', 'D&DV']
 
 export function computeAllowedSources(
   edition: Edition,

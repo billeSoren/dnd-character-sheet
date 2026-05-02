@@ -58,10 +58,10 @@ export interface CharacterFormData {
 }
 
 export const DEFAULT_FORM_DATA: CharacterFormData = {
-  edition: '5.5e',
+  edition: '5e',
   expandedRules: false,
   thirdParty: false,
-  allowedSources: ['PHB24', 'BR'],
+  allowedSources: ['PHB', 'BR'],
   advancementType: 'milestone',
   hitPointType: 'fixed',
   className: '',

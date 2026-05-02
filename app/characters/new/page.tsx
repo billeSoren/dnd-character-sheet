@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
@@ -9,6 +9,7 @@ import {
   CharacterFormData, DEFAULT_FORM_DATA, StatKey,
   modifier, calculateMaxHP, totalPBSpent, PB_BUDGET, STANDARD_ARRAY,
 } from '@/components/character-builder/types'
+import StepPreferences from '@/components/character-builder/StepPreferences'
 import StepClass from '@/components/character-builder/StepClass'
 import StepBackground from '@/components/character-builder/StepBackground'
 import StepSpecies from '@/components/character-builder/StepSpecies'
@@ -16,12 +17,8 @@ import StepAbilities from '@/components/character-builder/StepAbilities'
 import StepFinish from '@/components/character-builder/StepFinish'
 import ThemeToggle from '@/components/ThemeToggle'
 
-// ── Step metadata ─────────────────────────────────────────────────────────────
-
 const TABS = ['CLASS', 'BACKGROUND', 'SPECIES', 'ABILITIES', 'EQUIPMENT'] as const
 const TOTAL_STEPS = TABS.length
-
-// ── Validation ────────────────────────────────────────────────────────────────
 
 function validateStep(step: number, data: CharacterFormData): string | null {
   switch (step) {
@@ -43,15 +40,15 @@ function validateStep(step: number, data: CharacterFormData): string | null {
   }
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
-
 export default function NewCharacterPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [step, setStep] = useState(1)
+  // step 0 = preferences, steps 1–5 = builder tabs
+  const [step, setStep] = useState(0)
   const [formData, setFormData] = useState<CharacterFormData>(DEFAULT_FORM_DATA)
   const [stepError, setStepError] = useState('')
+  const [startError, setStartError] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [authChecked, setAuthChecked] = useState(false)
@@ -59,7 +56,7 @@ export default function NewCharacterPage() {
   const [dbClasses, setDbClasses] = useState<DndClass[]>([])
   const [dbBackgrounds, setDbBackgrounds] = useState<DndBackground[]>([])
   const [dbRaces, setDbRaces] = useState<DndRace[]>([])
-  const [dataLoading, setDataLoading] = useState(true)
+  const [dataLoading, setDataLoading] = useState(false)
   const [dataError, setDataError] = useState('')
 
   useEffect(() => {
@@ -69,8 +66,10 @@ export default function NewCharacterPage() {
     })
   }, [router, supabase])
 
-  useEffect(() => {
-    Promise.all([fetchClasses(), fetchBackgrounds(), fetchRaces()])
+  const loadData = useCallback((sources: string[]) => {
+    setDataLoading(true)
+    setDataError('')
+    Promise.all([fetchClasses(sources), fetchBackgrounds(sources), fetchRaces(sources)])
       .then(([cls, bgs, races]) => {
         setDbClasses(cls)
         setDbBackgrounds(bgs)
@@ -89,6 +88,13 @@ export default function NewCharacterPage() {
     setStepError('')
   }
 
+  const handleStartBuilding = () => {
+    if (!formData.name.trim()) { setStartError('Enter a name for your character.'); return }
+    setStartError('')
+    loadData(formData.allowedSources)
+    setStep(1)
+  }
+
   const goNext = () => {
     const err = validateStep(step, formData)
     if (err) { setStepError(err); return }
@@ -98,7 +104,7 @@ export default function NewCharacterPage() {
 
   const goBack = () => {
     setStepError('')
-    setStep((s) => Math.max(1, s - 1))
+    setStep((s) => Math.max(0, s - 1))
   }
 
   const jumpTo = (target: number) => {
@@ -133,9 +139,6 @@ export default function NewCharacterPage() {
     const bgSkills = selectedBg?.skill_proficiencies ?? []
     const allSkills = [...bgSkills, ...formData.selectedSkills]
 
-    // Insert character row.
-    // NOTE: To also save class_id / background_id / race_id, add those columns
-    // to your `characters` table in Supabase and uncomment the three lines below.
     const { data: char, error: charErr } = await supabase
       .from('characters')
       .insert({
@@ -145,9 +148,6 @@ export default function NewCharacterPage() {
         class: formData.className,
         level: formData.level,
         background: formData.background,
-        // class_id: formData.classId,
-        // background_id: formData.backgroundId,
-        // race_id: formData.raceId,
         skill_proficiencies: allSkills,
       })
       .select()
@@ -178,46 +178,38 @@ export default function NewCharacterPage() {
     )
   }
 
-  const stepLabel = formData.className || formData.background || formData.race
-    ? [formData.className, formData.background, formData.race].filter(Boolean).join(' · ')
-    : 'New Character'
+  const stepLabel = formData.name.trim() || 'New Character'
 
-  return (
-    <div className="min-h-screen bg-dnd-bg relative">
-
-      {/* ── Decorative side panels (lg+) ──────────────────────────────────── */}
-      <div
-        className="hidden lg:block fixed left-0 top-0 bottom-0 pointer-events-none"
-        style={{ width: 'calc(50% - 380px)' }}
-      >
+  const decorativePanels = (
+    <>
+      <div className="hidden lg:block fixed left-0 top-0 bottom-0 pointer-events-none"
+        style={{ width: 'calc(50% - 380px)' }}>
         <div className="absolute inset-0" style={{
           background: 'linear-gradient(135deg, var(--dnd-bg) 0%, color-mix(in srgb, var(--dnd-bg) 85%, var(--dnd-accent)) 50%, var(--dnd-bg) 100%)',
         }} />
         <div className="absolute right-0 top-0 bottom-0 w-px opacity-30"
           style={{ background: 'linear-gradient(to bottom, transparent, var(--dnd-accent), transparent)' }} />
-        <div className="absolute inset-0 flex items-center justify-center opacity-5 text-9xl select-none">
-          ⚔️
-        </div>
+        <div className="absolute inset-0 flex items-center justify-center opacity-5 text-9xl select-none">⚔️</div>
       </div>
-      <div
-        className="hidden lg:block fixed right-0 top-0 bottom-0 pointer-events-none"
-        style={{ width: 'calc(50% - 380px)' }}
-      >
+      <div className="hidden lg:block fixed right-0 top-0 bottom-0 pointer-events-none"
+        style={{ width: 'calc(50% - 380px)' }}>
         <div className="absolute inset-0" style={{
           background: 'linear-gradient(225deg, var(--dnd-bg) 0%, color-mix(in srgb, var(--dnd-bg) 85%, var(--dnd-accent)) 50%, var(--dnd-bg) 100%)',
         }} />
         <div className="absolute left-0 top-0 bottom-0 w-px opacity-30"
           style={{ background: 'linear-gradient(to bottom, transparent, var(--dnd-accent), transparent)' }} />
-        <div className="absolute inset-0 flex items-center justify-center opacity-5 text-9xl select-none">
-          🐉
-        </div>
+        <div className="absolute inset-0 flex items-center justify-center opacity-5 text-9xl select-none">🐉</div>
       </div>
+    </>
+  )
 
-      {/* ── Center column ─────────────────────────────────────────────────── */}
-      <div
-        className="relative mx-auto min-h-screen flex flex-col shadow-2xl"
-        style={{ maxWidth: '760px', background: 'var(--dnd-card)' }}
-      >
+  return (
+    <div className="min-h-screen bg-dnd-bg relative">
+      {decorativePanels}
+
+      <div className="relative mx-auto min-h-screen flex flex-col shadow-2xl"
+        style={{ maxWidth: '760px', background: 'var(--dnd-card)' }}>
+
         {/* Header */}
         <header className="flex items-center justify-between px-5 py-3.5 border-b border-dnd-border flex-shrink-0">
           <Link href="/" className="flex items-center gap-2 text-dnd-muted hover:text-dnd-accent transition-colors">
@@ -230,74 +222,63 @@ export default function NewCharacterPage() {
           <ThemeToggle />
         </header>
 
-        {/* Tab navigation */}
-        <nav className="flex border-b border-dnd-border flex-shrink-0 overflow-x-auto">
-          {TABS.map((tab, i) => {
-            const tabStep = i + 1
-            const isActive    = step === tabStep
-            const isCompleted = step > tabStep
-            const isClickable = isCompleted
-
-            return (
-              <button
-                key={tab}
-                onClick={() => isClickable && jumpTo(tabStep)}
-                disabled={!isClickable && !isActive}
-                className={`flex-1 min-w-[80px] flex flex-col items-center gap-1 py-3 px-2 text-xs font-bold tracking-widest uppercase transition-colors border-b-2 ${
-                  isActive
-                    ? 'border-b-dnd-accent text-dnd-accent'
-                    : isCompleted
-                    ? 'border-b-transparent text-green-500 hover:text-dnd-accent cursor-pointer'
+        {/* Tab navigation — hidden on preferences screen */}
+        {step >= 1 && (
+          <nav className="flex border-b border-dnd-border flex-shrink-0 overflow-x-auto">
+            {TABS.map((tab, i) => {
+              const tabStep    = i + 1
+              const isActive   = step === tabStep
+              const isCompleted = step > tabStep
+              return (
+                <button
+                  key={tab}
+                  onClick={() => isCompleted && jumpTo(tabStep)}
+                  disabled={!isCompleted && !isActive}
+                  className={`flex-1 min-w-[80px] flex flex-col items-center gap-1 py-3 px-2 text-xs font-bold tracking-widest uppercase transition-colors border-b-2 ${
+                    isActive    ? 'border-b-dnd-accent text-dnd-accent'
+                    : isCompleted ? 'border-b-transparent text-green-500 hover:text-dnd-accent cursor-pointer'
                     : 'border-b-transparent text-dnd-muted cursor-default'
-                }`}
-              >
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  isActive
-                    ? 'bg-dnd-accent text-white'
-                    : isCompleted
-                    ? 'bg-green-500 text-white'
+                  }`}
+                >
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                    isActive    ? 'bg-dnd-accent text-white'
+                    : isCompleted ? 'bg-green-500 text-white'
                     : 'bg-dnd-border text-dnd-muted'
-                }`}>
-                  {isCompleted ? '✓' : tabStep}
-                </span>
-                <span className="hidden sm:block">{tab}</span>
-              </button>
-            )
-          })}
-        </nav>
+                  }`}>
+                    {isCompleted ? '✓' : tabStep}
+                  </span>
+                  <span className="hidden sm:block">{tab}</span>
+                </button>
+              )
+            })}
+          </nav>
+        )}
 
         {/* Data error banner */}
         {dataError && (
           <div className="mx-5 mt-4 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-            Failed to load D&D data: {dataError}
+            Failed to load D&amp;D data: {dataError}
           </div>
         )}
 
         {/* Step content */}
         <div className="flex-1 px-5 py-6 overflow-y-auto dnd-scrollbar">
-          {step === 1 && (
-            <StepClass
+          {step === 0 && (
+            <StepPreferences
               data={formData}
               onChange={updateForm}
-              classes={dbClasses}
-              loading={dataLoading}
+              onStart={handleStartBuilding}
+              startError={startError}
             />
+          )}
+          {step === 1 && (
+            <StepClass data={formData} onChange={updateForm} classes={dbClasses} loading={dataLoading} />
           )}
           {step === 2 && (
-            <StepBackground
-              data={formData}
-              onChange={updateForm}
-              backgrounds={dbBackgrounds}
-              loading={dataLoading}
-            />
+            <StepBackground data={formData} onChange={updateForm} backgrounds={dbBackgrounds} loading={dataLoading} />
           )}
           {step === 3 && (
-            <StepSpecies
-              data={formData}
-              onChange={updateForm}
-              races={dbRaces}
-              loading={dataLoading}
-            />
+            <StepSpecies data={formData} onChange={updateForm} races={dbRaces} loading={dataLoading} />
           )}
           {step === 4 && <StepAbilities data={formData} onChange={updateForm} />}
           {step === 5 && (
@@ -316,20 +297,20 @@ export default function NewCharacterPage() {
           {stepError && (
             <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
               <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
               {stepError}
             </div>
           )}
         </div>
 
-        {/* Footer navigation */}
-        {step < TOTAL_STEPS && (
+        {/* Footer navigation — only for steps 1–5 */}
+        {step >= 1 && step < TOTAL_STEPS && (
           <footer className="flex items-center justify-between px-5 py-4 border-t border-dnd-border flex-shrink-0">
             <button
               onClick={goBack}
-              disabled={step === 1}
-              className="flex items-center gap-2 px-4 py-2 border border-dnd-border text-dnd-muted hover:text-dnd-text hover:border-dnd-text disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 border border-dnd-border text-dnd-muted hover:text-dnd-text hover:border-dnd-text rounded-lg text-sm font-medium transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

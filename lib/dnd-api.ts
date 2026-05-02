@@ -49,9 +49,10 @@ export interface DndRace {
 
 // ── Fetch functions ────────────────────────────────────────────────────────
 
-export async function fetchClasses(): Promise<DndClass[]> {
+export async function fetchClasses(sources?: string[]): Promise<DndClass[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabase
     .from('dnd_classes')
     .select(
       'id, name, source, hit_die, primary_ability, saving_throws, ' +
@@ -59,6 +60,8 @@ export async function fetchClasses(): Promise<DndClass[]> {
       'num_skill_choices, description'
     )
     .order('name')
+  if (sources?.length) q = q.in('source', sources)
+  const { data, error } = await q
   if (error) throw new Error(`fetchClasses: ${error.message}`)
 
   const priority = ['PHB24', 'PHB', 'TCE', 'FOA', 'BR']
@@ -73,27 +76,33 @@ export async function fetchClasses(): Promise<DndClass[]> {
   return Array.from(seen.values())
 }
 
-export async function fetchBackgrounds(): Promise<DndBackground[]> {
+export async function fetchBackgrounds(sources?: string[]): Promise<DndBackground[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabase
     .from('backgrounds')
     .select(
       'id, name, source, description, skill_proficiencies, ' +
       'tool_proficiencies, languages, feature_name, feature_description'
     )
     .order('name')
+  if (sources?.length) q = q.in('source', sources)
+  const { data, error } = await q
   if (error) throw new Error(`fetchBackgrounds: ${error.message}`)
   return (data ?? []) as unknown as DndBackground[]
 }
 
-export async function fetchRaces(): Promise<DndRace[]> {
+export async function fetchRaces(sources?: string[]): Promise<DndRace[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabase
     .from('races')
     .select(
       'id, name, source, ability_bonuses, speed, size, traits, languages, description'
     )
     .order('name')
+  if (sources?.length) q = q.in('source', sources)
+  const { data, error } = await q
   if (error) throw new Error(`fetchRaces: ${error.message}`)
   return (data ?? []) as DndRace[]
 }

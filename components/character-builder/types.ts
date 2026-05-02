@@ -1,5 +1,27 @@
 export type StatKey = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'
 export type AbilityMethod = 'standard' | 'pointbuy' | 'manual'
+export type Edition = '5e' | '5.5e'
+export type AdvancementType = 'milestone' | 'xp'
+export type HitPointType = 'fixed' | 'rolled'
+
+const BASE_SOURCES: Record<Edition, string[]> = {
+  '5e':   ['PHB', 'BR'],
+  '5.5e': ['PHB24', 'BR'],
+}
+const EXPANDED_SOURCES   = ['TCE', 'XGE', 'FOA']
+const THIRD_PARTY_SOURCES = ['BHC', 'D&DV']
+
+export function computeAllowedSources(
+  edition: Edition,
+  expandedRules: boolean,
+  thirdParty: boolean,
+): string[] {
+  return [
+    ...BASE_SOURCES[edition],
+    ...(expandedRules && edition === '5e' ? EXPANDED_SOURCES : []),
+    ...(thirdParty ? THIRD_PARTY_SOURCES : []),
+  ]
+}
 
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const
 
@@ -9,6 +31,13 @@ export const PB_COST: Record<number, number> = {
 export const PB_BUDGET = 27
 
 export interface CharacterFormData {
+  // Step 0 — preferences
+  edition: Edition
+  expandedRules: boolean
+  thirdParty: boolean
+  allowedSources: string[]
+  advancementType: AdvancementType
+  hitPointType: HitPointType
   // Step 1
   className: string
   classId: string | null
@@ -29,6 +58,12 @@ export interface CharacterFormData {
 }
 
 export const DEFAULT_FORM_DATA: CharacterFormData = {
+  edition: '5.5e',
+  expandedRules: false,
+  thirdParty: false,
+  allowedSources: ['PHB24', 'BR'],
+  advancementType: 'milestone',
+  hitPointType: 'fixed',
   className: '',
   classId: null,
   background: '',

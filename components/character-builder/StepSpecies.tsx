@@ -66,7 +66,7 @@ function buildGroups(races: DndRace[]): ListEntry[] {
   }
 
   const entries: ListEntry[] = []
-  for (const [base, children] of map) {
+  for (const [base, children] of Array.from(map.entries())) {
     if (children.length >= 2) {
       entries.push({ kind: 'group', base, children })
     } else {
@@ -84,7 +84,7 @@ function buildGroups(races: DndRace[]): ListEntry[] {
 function filterEntries(entries: ListEntry[], q: string): ListEntry[] {
   if (!q) return entries
   const lq = q.toLowerCase()
-  return entries.flatMap((e) => {
+  return entries.flatMap((e): ListEntry[] => {
     if (e.kind === 'flat') {
       return e.race.name.toLowerCase().includes(lq) ? [e] : []
     }
@@ -164,7 +164,7 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
   const toggleGroup = (base: string) =>
     setOpenGroups((prev) => {
       const next = new Set(prev)
-      next.has(base) ? next.delete(base) : next.add(base)
+      if (next.has(base)) { next.delete(base) } else { next.add(base) }
       return next
     })
 
@@ -279,7 +279,7 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
                 </button>
 
                 {/* Variants */}
-                {isGroupOpen && children.map((race, ci) => {
+                {isGroupOpen && children.map((race) => {
                   const isSelected = data.race === race.name
                   const isDetail   = detailOpen === race.name
                   return (

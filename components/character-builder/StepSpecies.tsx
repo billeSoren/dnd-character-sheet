@@ -126,6 +126,8 @@ type ListEntry  = FlatEntry | GroupEntry
 function buildGroups(races: DndRace[]): ListEntry[] {
   const map = new Map<string, DndRace[]>()
   for (const race of races) {
+    // Custom/Custom Lineage entries live only in the Custom Origin section
+    if (race.name.toLowerCase().startsWith('custom')) continue
     const b = baseName(race.name)
     if (!map.has(b)) map.set(b, [])
     map.get(b)!.push(race)
@@ -473,7 +475,15 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
             return (
               <div key={origin.name} className={idx > 0 ? 'border-t border-dnd-border' : ''}>
                 <button
-                  onClick={() => selectRace(origin.name, null)}
+                  onClick={() => {
+                    if (isSelected) {
+                      // Toggle off — deselect and re-enable standard races list
+                      onChange({ race: '', raceId: null })
+                      setDetailOpen(null)
+                    } else {
+                      selectRace(origin.name, null)
+                    }
+                  }}
                   className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all ${
                     isSelected
                       ? 'bg-dnd-accent/10 border-l-[3px] border-l-dnd-accent'
@@ -492,7 +502,10 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
                     </div>
                     <p className="text-xs text-dnd-muted mt-0.5 line-clamp-1">{origin.desc}</p>
                   </div>
-                  {isSelected && <span className="text-dnd-accent text-sm flex-shrink-0">✓</span>}
+                  {isSelected
+                    ? <span className="text-[10px] text-dnd-muted border border-dnd-border rounded px-1.5 py-0.5 flex-shrink-0">✕ clear</span>
+                    : null
+                  }
                 </button>
 
                 {isSelected && (
@@ -529,7 +542,7 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
       </div>
 
       {/* Race list */}
-      <div className={`border border-dnd-border rounded-lg overflow-hidden ${isCustomSelected ? 'opacity-60 pointer-events-none' : ''}`}>
+      <div className={`border border-dnd-border rounded-lg overflow-hidden transition-opacity ${isCustomSelected ? 'opacity-40 pointer-events-none' : ''}`}>
         {visible.length === 0 ? (
           <div className="py-10 text-center text-dnd-muted text-sm">
             No results for &ldquo;{search}&rdquo;

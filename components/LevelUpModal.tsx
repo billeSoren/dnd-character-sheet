@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import {
   ClassName, ClassFeature, HIT_DICE, SUBCLASS_LEVEL,
@@ -135,12 +135,59 @@ export default function LevelUpModal({
   const [asiStat2, setAsiStat2] = useState<StatKey>('DEX')
 
   // ── Subclass state ────────────────────────────────────────────────────────
-  const [subclassChoice, setSubclassChoice] = useState('')
+  const [subclassChoice,    setSubclassChoice]    = useState('')
+  const [dbSubclasses,      setDbSubclasses]      = useState<Array<{
+    id: string; name: string; description: string | null; source: string | null
+  }>>([])
+  const [loadingSubclasses, setLoadingSubclasses] = useState(false)
+  const [subclassFetchDone, setSubclassFetchDone] = useState(false)
 
   // ── Flow state ────────────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>('choose_class')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  // ── Subclass DB fetch ──────────────────────────────────────────────────────
+  // Reset subclass fetch state when the selected class changes so a new fetch
+  // fires if the user goes back and picks a different class.
+  const prevClassRef = useRef(selectedClassName)
+  useEffect(() => {
+    if (prevClassRef.current === selectedClassName) return
+    prevClassRef.current = selectedClassName
+    setDbSubclasses([])
+    setSubclassFetchDone(false)
+  }, [selectedClassName])
+
+  // Fetch subclasses from the `subclasses` table when the subclass step
+  // becomes active.  Gracefully falls back to empty (and custom input) when
+  // the table doesn't exist yet.
+  useEffect(() => {
+    if (step !== 'subclass' || subclassFetchDone || !selectedClassName) return
+    let cancelled = false
+    setLoadingSubclasses(true)
+
+    const sb = createClient()
+    // The cast silences TS — the `subclasses` table may not exist in the
+    // generated types yet.  The fetch will simply return an error which we
+    // handle gracefully.
+    ;(sb.from as (t: string) => ReturnType<typeof sb.from>)('subclasses')
+      .select('id, name, description, source')
+      .ilike('class_name', selectedClassName)
+      .order('name')
+      .then(({ data, error: fetchErr }: { data: unknown; error: unknown }) => {
+        if (cancelled) return
+        if (!fetchErr && Array.isArray(data) && data.length > 0) {
+          setDbSubclasses(
+            data as Array<{ id: string; name: string; description: string | null; source: string | null }>
+          )
+        }
+        setLoadingSubclasses(false)
+        setSubclassFetchDone(true)
+      })
+
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selectedClassName, subclassFetchDone])
 
   // ── Derived computations ──────────────────────────────────────────────────
 
@@ -829,39 +876,64 @@ export default function LevelUpModal({
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedClassName} Level {nextClassLevel} — Subclass feature unlocked
                 </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  Your DM and rulebook determine available subclasses.
-                </p>
               </div>
 
-              {/* Suggestion chips */}
-              {SUBCLASS_SUGGESTIONS[selectedClassName as ClassName] && (
-                <div>
-                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
-                    Common Options
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {(SUBCLASS_SUGGESTIONS[selectedClassName as ClassName] ?? []).map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        onClick={() => setSubclassChoice(suggestion)}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                          subclassChoice === suggestion
-                            ? 'border-amber-500 bg-amber-500/15 text-amber-400'
-                            : 'border-gray-600 bg-gray-800 text-gray-300 hover:border-amber-500/40 hover:text-amber-400'
-                        }`}
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
+              {/* ── DB subclass cards (loading / results / empty) ── */}
+              {loadingSubclasses ? (
+                /* Loading skeleton */
+                <div className="space-y-2">
+                  {[0, 1, 2].map((i) => (
+                    <div
+                      key={i}
+                      className="h-16 rounded-xl border border-gray-700 bg-gray-800 animate-pulse"
+                    />
+                  ))}
                 </div>
-              )}
+              ) : dbSubclasses.length > 0 ? (
+                /* Subclass cards from DB */
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
+                  {dbSubclasses.map((sub) => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setSubclassChoice(sub.name)}
+                      className={`w-full text-left p-3 rounded-xl border transition-all ${
+                        subclassChoice === sub.name
+                          ? 'border-amber-500 bg-amber-500/10 shadow-sm shadow-amber-500/20'
+                          : 'border-gray-700 bg-gray-800 hover:border-amber-500/40 hover:bg-gray-750'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`font-semibold text-sm leading-tight ${
+                          subclassChoice === sub.name ? 'text-amber-400' : 'text-white'
+                        }`}>
+                          {sub.name}
+                        </span>
+                        {sub.source && (
+                          <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 font-medium tracking-wide">
+                            {sub.source}
+                          </span>
+                        )}
+                      </div>
+                      {sub.description && (
+                        <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                          {sub.description}
+                        </p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : subclassFetchDone ? (
+                /* Table missing or no results */
+                <p className="text-xs text-gray-500 py-1">
+                  No subclasses found in database — enter a name below.
+                </p>
+              ) : null}
 
-              {/* Custom input */}
+              {/* Custom / fallback text input */}
               <div>
                 <label className="block text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
-                  Subclass Name
+                  {dbSubclasses.length > 0 ? 'Or type a custom subclass name' : 'Subclass Name'}
                 </label>
                 <input
                   type="text"

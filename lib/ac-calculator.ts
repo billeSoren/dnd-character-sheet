@@ -72,6 +72,28 @@ function matchArmor(name: string): ArmorEntry | null {
   return null
 }
 
+// Fallback when the item name doesn't match a specific armor (e.g. "Adamantine
+// Armor", "Mithral Armor", "+1 Armor", "Armor of Invulnerability").
+// Reads the magic_items.type field, e.g. "Armor (medium or heavy)".
+//
+// Priority: "medium or heavy" → scale mail (14, medium) as the conservative
+// mid-point; plain "heavy" → chain mail (16); "medium" → scale mail (14);
+// "light" → leather (11).  Falls back to scale mail (14, medium) if type gives
+// no category hint at all (beats the old broken default of 10 light).
+function matchArmorByType(
+  type: string | null,
+): { base: number; category: 'light' | 'medium' | 'heavy' } | null {
+  if (!type) return null
+  const t = type.toLowerCase()
+  if (/medium\s+or\s+heavy/.test(t)) return { base: 14, category: 'medium' }
+  if (/\bheavy\b/.test(t))           return { base: 16, category: 'heavy'  }
+  if (/\bmedium\b/.test(t))          return { base: 14, category: 'medium' }
+  if (/\blight\b/.test(t))           return { base: 11, category: 'light'  }
+  // type says "armor" but no weight category — default to medium
+  if (/armo(?:r|ur)/.test(t))        return { base: 14, category: 'medium' }
+  return null
+}
+
 function parseMagicBonus(name: string): number {
   const m = name.match(/\+(\d)/)
   return m ? parseInt(m[1], 10) : 0
@@ -150,10 +172,13 @@ export function calculateAC(input: ACInput): ACResult {
     // Step 3 — Calculate base AC from armor (or unarmored / mage armor)
     // -----------------------------------------------------------------------
     if (equippedArmor) {
+      // 1st: match specific armor name; 2nd: infer from type field; 3rd: medium default
       const armorEntry = matchArmor(equippedArmor.name)
+                      ?? matchArmorByType(equippedArmor.type)
+                      ?? { base: 14, category: 'medium' as const }
       const magicBonus = parseMagicBonus(equippedArmor.name)
-      const tableBase  = armorEntry?.base ?? 10
-      const cat        = armorEntry?.category ?? 'light'
+      const tableBase  = armorEntry.base
+      const cat        = armorEntry.category
       armorCategory    = cat
 
       // Medium Armor Master raises medium-armor DEX cap from 2 → 3

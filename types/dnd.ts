@@ -146,6 +146,69 @@ export interface Database {
         Update: Record<string, never>
         Relationships: []
       }
+      magic_items: {
+        Row: {
+          id: string
+          name: string
+          type: string | null
+          rarity: string | null
+          requires_attunement: boolean | null
+          description: string | null
+          source: string | null
+          is_official: boolean | null
+          hidden: boolean | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          type?: string | null
+          rarity?: string | null
+          requires_attunement?: boolean | null
+          description?: string | null
+          source?: string | null
+          is_official?: boolean | null
+          hidden?: boolean | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          type?: string | null
+          rarity?: string | null
+          requires_attunement?: boolean | null
+          description?: string | null
+          source?: string | null
+          is_official?: boolean | null
+          hidden?: boolean | null
+        }
+        Relationships: []
+      }
+      character_items: {
+        Row: {
+          id: string
+          character_id: string
+          item_id: string
+          equipped: boolean
+          attuned: boolean
+          added_at: string
+        }
+        Insert: {
+          id?: string
+          character_id: string
+          item_id: string
+          equipped?: boolean
+          attuned?: boolean
+          added_at?: string
+        }
+        Update: {
+          id?: string
+          character_id?: string
+          item_id?: string
+          equipped?: boolean
+          attuned?: boolean
+          added_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

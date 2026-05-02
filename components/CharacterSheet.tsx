@@ -5,6 +5,12 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import ThemeToggle from './ThemeToggle'
 import { StatKey } from '@/components/character-builder/types'
+import MagicItemBrowser from '@/components/magic-items/MagicItemBrowser'
+import {
+  MagicItem, CharacterItemWithItem,
+  rarityColor, rarityBorder,
+  magicBonus, weaponDamage, isFinesseWeapon, isWeaponType,
+} from '@/components/magic-items/magic-item-types'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -39,7 +45,7 @@ export interface CharacterSheetProps {
   } | null
 }
 
-type Tab = 'actions' | 'spells' | 'features' | 'notes'
+type Tab = 'actions' | 'spells' | 'features' | 'equipment' | 'notes'
 
 const LEVEL_ORD = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th']
 
@@ -289,12 +295,26 @@ function CentrePanel({ character, statScores, hp, savingThrows, skillList }:
 function RightPanel({ character, statScores, profBonus, spellSlots, classInfo, raceInfo }:
   Pick<CharacterSheetProps, 'character'|'statScores'|'profBonus'|'spellSlots'|'classInfo'|'raceInfo'>
 ) {
+  const supabase = createClient()
   const [tab, setTab] = useState<Tab>('actions')
+  const [characterItems, setCharacterItems] = useState<CharacterItemWithItem[]>([])
+
+  // Fetch character items once on mount
+  useEffect(() => {
+    supabase
+      .from('character_items')
+      .select('*, magic_items(*)')
+      .eq('character_id', character.id)
+      .then(({ data }) => setCharacterItems((data ?? []) as CharacterItemWithItem[]))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character.id])
+
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'actions', label: 'Actions' },
-    { id: 'spells',  label: 'Spells'  },
-    { id: 'features',label: 'Features'},
-    { id: 'notes',   label: 'Notes'   },
+    { id: 'actions',   label: 'Actions'   },
+    { id: 'spells',    label: 'Spells'    },
+    { id: 'features',  label: 'Features'  },
+    { id: 'equipment', label: 'Items'     },
+    { id: 'notes',     label: 'Notes'     },
   ]
 
   return (
@@ -317,10 +337,24 @@ function RightPanel({ character, statScores, profBonus, spellSlots, classInfo, r
       </div>
 
       <div className="pt-3">
-        {tab === 'actions'  && <ActionsTab character={character} statScores={statScores} profBonus={profBonus} />}
-        {tab === 'spells'   && <SpellsTab  spellSlots={spellSlots} character={character} />}
-        {tab === 'features' && <FeaturesTab classInfo={classInfo} raceInfo={raceInfo} character={character} />}
-        {tab === 'notes'    && <NotesTab characterId={character.id} />}
+        {tab === 'actions'   && (
+          <ActionsTab
+            character={character}
+            statScores={statScores}
+            profBonus={profBonus}
+            equippedWeapons={characterItems.filter((ci) => ci.equipped && isWeaponType(ci.magic_items.type))}
+          />
+        )}
+        {tab === 'spells'    && <SpellsTab  spellSlots={spellSlots} character={character} />}
+        {tab === 'features'  && <FeaturesTab classInfo={classInfo} raceInfo={raceInfo} character={character} />}
+        {tab === 'equipment' && (
+          <EquipmentTab
+            characterId={character.id}
+            items={characterItems}
+            setItems={setCharacterItems}
+          />
+        )}
+        {tab === 'notes'     && <NotesTab characterId={character.id} />}
       </div>
     </div>
   )
@@ -328,34 +362,78 @@ function RightPanel({ character, statScores, profBonus, spellSlots, classInfo, r
 
 // ── Tab: Actions ───────────────────────────────────────────────────────────────
 
-function ActionsTab({ character, statScores, profBonus }:
-  { character: CharacterData; statScores: Record<StatKey, number>; profBonus: number }
-) {
+function ActionsTab({ character, statScores, profBonus, equippedWeapons }: {
+  character: CharacterData
+  statScores: Record<StatKey, number>
+  profBonus: number
+  equippedWeapons: CharacterItemWithItem[]
+}) {
   const strMod = mod(statScores.STR)
   const dexMod = mod(statScores.DEX)
-  const attackBonus = (ability: StatKey) => mod(statScores[ability]) + profBonus
 
-  const actions = [
-    { name: 'Unarmed Strike', type: 'Melee', ability: 'STR' as StatKey, dmg: `1 + ${Math.max(0, strMod)} bludgeoning` },
-    ...(dexMod > strMod
-      ? [{ name: 'Finesse Strike', type: 'Melee', ability: 'DEX' as StatKey, dmg: `1d6 + ${Math.max(0, dexMod)} piercing` }]
-      : []),
+  // Base unarmed actions
+  const baseActions = [
+    {
+      name: 'Unarmed Strike',
+      category: 'Melee',
+      toHit: strMod + profBonus,
+      dmg: `1 + ${Math.max(0, strMod)} bludgeoning`,
+      rarity: null as string | null,
+    },
+    ...(dexMod > strMod ? [{
+      name: 'Finesse Strike',
+      category: 'Melee',
+      toHit: dexMod + profBonus,
+      dmg: `1d6 + ${Math.max(0, dexMod)} piercing`,
+      rarity: null as string | null,
+    }] : []),
   ]
+
+  // Equipped magic weapons
+  const weaponActions = equippedWeapons.map((ci) => {
+    const item    = ci.magic_items
+    const bonus   = magicBonus(item.name)
+    const finesse = isFinesseWeapon(item.name)
+    const statMod = finesse ? Math.max(strMod, dexMod) : strMod
+    const dmgInfo = weaponDamage(item.name)
+    const totalDmgMod = statMod + bonus
+    const dmgStr = dmgInfo
+      ? `${dmgInfo.die}${totalDmgMod !== 0 ? ` ${totalDmgMod >= 0 ? '+' : ''}${totalDmgMod}` : ''} ${dmgInfo.type}`
+      : 'Special'
+    return {
+      name: item.name,
+      category: item.type ?? 'Weapon',
+      toHit: statMod + profBonus + bonus,
+      dmg: dmgStr,
+      rarity: item.rarity,
+    }
+  })
+
+  const allActions = [...baseActions, ...weaponActions]
 
   return (
     <div className="space-y-3">
       <Sheet label="Actions">
         <div className="space-y-2">
-          {actions.map((a) => (
-            <div key={a.name} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-dnd-border bg-dnd-subtle">
+          {allActions.map((a) => (
+            <div
+              key={a.name}
+              className={`flex items-center gap-3 py-2 px-3 rounded-lg border bg-dnd-subtle ${
+                a.rarity ? rarityBorder(a.rarity) : 'border-dnd-border'
+              }`}
+            >
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-dnd-text">{a.name}</p>
-                <p className="text-xs text-dnd-muted">{a.type} · {a.dmg}</p>
+                <p className="text-sm font-semibold text-dnd-text truncate">{a.name}</p>
+                <p className="text-xs text-dnd-muted">
+                  {a.category}
+                  {a.rarity && (
+                    <span className={`ml-1.5 ${rarityColor(a.rarity)}`}>{a.rarity}</span>
+                  )}
+                  {' · '}{a.dmg}
+                </p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className={`text-lg font-bold ${modColor(attackBonus(a.ability))}`}>
-                  {modStr(attackBonus(a.ability))}
-                </p>
+                <p className={`text-lg font-bold ${modColor(a.toHit)}`}>{modStr(a.toHit)}</p>
                 <p className="text-[9px] text-dnd-muted uppercase tracking-wide">to hit</p>
               </div>
             </div>
@@ -365,14 +443,12 @@ function ActionsTab({ character, statScores, profBonus }:
 
       <Sheet label="Proficiencies">
         <div className="space-y-2 text-sm">
-          {[
-            { label: 'Armour', value: character.class === 'Barbarian' ? 'Light, Medium, Shields' : 'As class' },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex gap-2">
-              <span className="text-dnd-muted min-w-[80px]">{label}:</span>
-              <span className="text-dnd-text">{value}</span>
-            </div>
-          ))}
+          <div className="flex gap-2">
+            <span className="text-dnd-muted min-w-[80px]">Armour:</span>
+            <span className="text-dnd-text">
+              {character.class === 'Barbarian' ? 'Light, Medium, Shields' : 'As class'}
+            </span>
+          </div>
         </div>
       </Sheet>
     </div>
@@ -458,6 +534,225 @@ function SpellsTab({ spellSlots, character }: { spellSlots: number[]; character:
         </p>
       </Sheet>
     </div>
+  )
+}
+
+// ── Tab: Equipment ─────────────────────────────────────────────────────────────
+
+const MAX_ATTUNEMENT = 3
+
+function EquipmentTab({ characterId, items, setItems }: {
+  characterId: string
+  items: CharacterItemWithItem[]
+  setItems: React.Dispatch<React.SetStateAction<CharacterItemWithItem[]>>
+}) {
+  const supabase = createClient()
+  const [showBrowser, setShowBrowser] = useState(false)
+  const [error, setError] = useState('')
+
+  const attunedCount = items.filter((i) => i.attuned).length
+
+  const toggleEquip = async (id: string, current: boolean) => {
+    const { error: err } = await supabase.from('character_items').update({ equipped: !current }).eq('id', id)
+    if (err) { setError(err.message); return }
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, equipped: !current } : i))
+  }
+
+  const toggleAttune = async (id: string, current: boolean) => {
+    if (!current && attunedCount >= MAX_ATTUNEMENT) {
+      setError(`Maximum ${MAX_ATTUNEMENT} attuned items reached.`)
+      return
+    }
+    setError('')
+    const { error: err } = await supabase.from('character_items').update({ attuned: !current }).eq('id', id)
+    if (err) { setError(err.message); return }
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, attuned: !current } : i))
+  }
+
+  const removeItem = async (id: string) => {
+    const { error: err } = await supabase.from('character_items').delete().eq('id', id)
+    if (err) { setError(err.message); return }
+    setItems((prev) => prev.filter((i) => i.id !== id))
+  }
+
+  const handleAdd = async (item: MagicItem) => {
+    setError('')
+    const { data, error: err } = await supabase
+      .from('character_items')
+      .insert({ character_id: characterId, item_id: item.id })
+      .select('*, magic_items(*)')
+      .single()
+    if (err) {
+      // 23505 = unique violation (already owned)
+      setError(err.code === '23505' ? `${item.name} is already in your inventory.` : err.message)
+      return
+    }
+    setItems((prev) => [...prev, data as CharacterItemWithItem])
+    setShowBrowser(false)
+  }
+
+  return (
+    <>
+      <div className="space-y-3">
+        {/* Attunement bar */}
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[10px] font-bold text-dnd-muted uppercase tracking-widest">
+            Attunement
+          </span>
+          <div className="flex gap-1.5">
+            {Array.from({ length: MAX_ATTUNEMENT }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                  i < attunedCount
+                    ? 'border-dnd-accent bg-dnd-accent/20'
+                    : 'border-dnd-border'
+                }`}
+              >
+                {i < attunedCount && <span className="text-dnd-accent text-[9px] leading-none">✦</span>}
+              </div>
+            ))}
+            <span className="text-xs text-dnd-muted ml-1 self-center">{attunedCount}/{MAX_ATTUNEMENT}</span>
+          </div>
+        </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs">
+            {error}
+          </div>
+        )}
+
+        {/* Item list */}
+        {items.length === 0 ? (
+          <p className="text-center py-8 text-dnd-muted text-sm">No items yet.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {items.map((ci) => {
+              const item = ci.magic_items
+              return (
+                <div
+                  key={ci.id}
+                  className={`p-3 rounded-lg border bg-dnd-subtle transition-colors ${
+                    rarityBorder(item.rarity)
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-dnd-text truncate">{item.name}</p>
+                      <p className="text-xs text-dnd-muted">
+                        {item.type ?? 'Unknown'}
+                        {' · '}
+                        <span className={rarityColor(item.rarity)}>{item.rarity ?? 'Unknown'}</span>
+                        {item.requires_attunement && (
+                          <span className={`ml-1.5 text-xs ${ci.attuned ? 'text-dnd-accent' : 'text-dnd-muted'}`}>✦</span>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {/* Equip */}
+                      <button
+                        type="button"
+                        title={ci.equipped ? 'Unequip' : 'Equip'}
+                        onClick={() => toggleEquip(ci.id, ci.equipped)}
+                        className={`p-1.5 rounded border transition-colors ${
+                          ci.equipped
+                            ? 'border-dnd-accent bg-dnd-accent/15 text-dnd-accent'
+                            : 'border-dnd-border text-dnd-muted hover:border-dnd-accent/40 hover:text-dnd-accent'
+                        }`}
+                      >
+                        <svg className="w-3.5 h-3.5" fill={ci.equipped ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+
+                      {/* Attune — only for items that require it */}
+                      {item.requires_attunement && (
+                        <button
+                          type="button"
+                          title={ci.attuned ? 'Remove attunement' : 'Attune'}
+                          onClick={() => toggleAttune(ci.id, ci.attuned)}
+                          className={`p-1.5 rounded border transition-colors ${
+                            ci.attuned
+                              ? 'border-dnd-accent bg-dnd-accent/15 text-dnd-accent'
+                              : 'border-dnd-border text-dnd-muted hover:border-dnd-accent/40 hover:text-dnd-accent'
+                          }`}
+                        >
+                          <span className="text-[11px] leading-none">✦</span>
+                        </button>
+                      )}
+
+                      {/* Remove */}
+                      <button
+                        type="button"
+                        title="Remove from inventory"
+                        onClick={() => removeItem(ci.id)}
+                        className="p-1.5 rounded border border-dnd-border text-dnd-muted hover:border-red-500/40 hover:text-red-400 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Status badges */}
+                  {(ci.equipped || ci.attuned) && (
+                    <div className="flex gap-1.5 mt-2">
+                      {ci.equipped && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-dnd-accent/15 text-dnd-accent font-semibold tracking-wide">
+                          EQUIPPED
+                        </span>
+                      )}
+                      {ci.attuned && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-dnd-accent/15 text-dnd-accent font-semibold tracking-wide">
+                          ATTUNED ✦
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Add item button */}
+        <button
+          type="button"
+          onClick={() => { setError(''); setShowBrowser(true) }}
+          className="w-full flex items-center justify-center gap-2 py-2.5 border border-dnd-border border-dashed rounded-lg text-sm text-dnd-muted hover:text-dnd-accent hover:border-dnd-accent/40 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Magic Item
+        </button>
+      </div>
+
+      {/* ── Item browser overlay ── */}
+      {showBrowser && (
+        <div className="fixed inset-0 z-50 bg-dnd-bg/98 overflow-y-auto dnd-scrollbar">
+          <div className="max-w-2xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between mb-4 sticky top-0 bg-dnd-bg py-2 border-b border-dnd-border">
+              <h2 className="text-base font-bold text-dnd-text">Add Magic Item</h2>
+              <button
+                type="button"
+                onClick={() => setShowBrowser(false)}
+                className="p-1.5 text-dnd-muted hover:text-dnd-text rounded transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <MagicItemBrowser onAdd={handleAdd} />
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

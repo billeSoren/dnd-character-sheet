@@ -37,6 +37,13 @@ export default async function Home() {
               <span>✨</span>
               <span className="hidden sm:inline">Spells</span>
             </Link>
+            <Link
+              href="/magic-items"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dnd-border text-dnd-muted hover:text-dnd-accent hover:border-dnd-accent/40 transition-colors text-sm font-medium"
+            >
+              <span>⚔️</span>
+              <span className="hidden sm:inline">Items</span>
+            </Link>
             <ThemeToggle />
             <AuthButton user={user} />
           </div>

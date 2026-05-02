@@ -215,6 +215,111 @@ export interface Database {
         }
         Relationships: []
       }
+      character_active_effects: {
+        Row: {
+          id: string
+          character_id: string
+          effect_name: string
+          effect_type: string
+          value: number
+          source: string | null
+          source_name: string | null
+          expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          character_id: string
+          effect_name: string
+          effect_type: string
+          value: number
+          source?: string | null
+          source_name?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          character_id?: string
+          effect_name?: string
+          effect_type?: string
+          value?: number
+          source?: string | null
+          source_name?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      character_classes: {
+        Row: {
+          id: string
+          character_id: string
+          class_id: string | null
+          class_name: string
+          level: number
+          is_primary: boolean
+          subclass: string | null
+          subclass_level: number | null
+          hit_die: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          character_id: string
+          class_id?: string | null
+          class_name: string
+          level?: number
+          is_primary?: boolean
+          subclass?: string | null
+          subclass_level?: number | null
+          hit_die: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          character_id?: string
+          class_id?: string | null
+          class_name?: string
+          level?: number
+          is_primary?: boolean
+          subclass?: string | null
+          subclass_level?: number | null
+          hit_die?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      character_level_history: {
+        Row: {
+          id: string
+          character_id: string
+          total_level: number
+          class_name: string
+          hp_gained: number
+          choices: Record<string, unknown> | null
+          leveled_at: string
+        }
+        Insert: {
+          id?: string
+          character_id: string
+          total_level: number
+          class_name: string
+          hp_gained: number
+          choices?: Record<string, unknown> | null
+          leveled_at?: string
+        }
+        Update: {
+          id?: string
+          character_id?: string
+          total_level?: number
+          class_name?: string
+          hp_gained?: number
+          choices?: Record<string, unknown> | null
+          leveled_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -223,7 +328,10 @@ export interface Database {
   }
 }
 
-export type Character = Database['public']['Tables']['characters']['Row']
+export type Character               = Database['public']['Tables']['characters']['Row']
+export type CharacterActiveEffect   = Database['public']['Tables']['character_active_effects']['Row']
+export type CharacterClass          = Database['public']['Tables']['character_classes']['Row']
+export type CharacterLevelHistory   = Database['public']['Tables']['character_level_history']['Row']
 export type CharacterStats = Database['public']['Tables']['character_stats']['Row']
 export type CharacterHP = Database['public']['Tables']['character_hp']['Row']
 

@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { StatKey } from '@/components/character-builder/types'
 import CharacterSheet from '@/components/CharacterSheet'
 import { notFound, redirect } from 'next/navigation'
+import { calculateAC } from '@/lib/ac-calculator'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -131,10 +132,16 @@ async function renderCharacterPage({ id }: { id: string }) {
     { data: character, error: charErr },
     { data: statsRow },
     { data: hpRow },
+    { data: itemRows },
+    { data: activeEffectRows },
+    { data: charClassRows },
   ] = await Promise.all([
     supabase.from('characters').select('*').eq('id', id).single(),
     supabase.from('character_stats').select('*').eq('character_id', id).single(),
     supabase.from('character_hp').select('*').eq('character_id', id).single(),
+    supabase.from('character_items').select('*, magic_items(*)').eq('character_id', id),
+    supabase.from('character_active_effects').select('*').eq('character_id', id),
+    supabase.from('character_classes').select('*').eq('character_id', id).order('is_primary', { ascending: false }),
   ])
 
   if (charErr) console.error('[CharacterPage] character query error:', charErr)
@@ -202,7 +209,49 @@ async function renderCharacterPage({ id }: { id: string }) {
   const passivePerception = 10 + (perception?.total ?? mod(statScores.WIS))
 
   const speed = (raceRow?.speed as number | null) ?? 30
-  console.log('[CharacterPage] derived values ok, rendering')
+
+  // ── Character classes for multiclass support ──────────────────────────────
+  const characterClassList = (charClassRows ?? []).map((r) => ({
+    id:           r.id as string,
+    character_id: r.character_id as string,
+    class_id:     r.class_id as string | null,
+    class_name:   r.class_name as string,
+    level:        r.level as number,
+    subclass:     r.subclass as string | null,
+    is_primary:   r.is_primary as boolean,
+    hit_die:      r.hit_die as number,
+  }))
+
+  // ── Compute initial AC server-side (client will recompute when effects change)
+  const initialItems = (itemRows ?? []) as Array<{
+    id: string; character_id: string; item_id: string; equipped: boolean; attuned: boolean
+    added_at: string; quantity: number; notes: string | null
+    magic_items: { id: string; name: string; type: string | null; rarity: string | null; requires_attunement: boolean | null; description: string | null; source: string | null; is_official: boolean | null; hidden: boolean | null }
+  }>
+
+  const primarySubclass = characterClassList.find((c) => c.is_primary)?.subclass ?? null
+
+  const initialAC = calculateAC({
+    statScores,
+    equippedItems: initialItems
+      .filter((ci) => ci.equipped)
+      .map((ci) => ({ name: ci.magic_items.name, type: ci.magic_items.type, equipped: true })),
+    activeEffects: (activeEffectRows ?? []).map((e) => ({
+      id: e.id as string,
+      effect_name: e.effect_name as string,
+      effect_type: e.effect_type as string,
+      value: e.value as number,
+      source: e.source as string | null,
+      source_name: e.source_name as string | null,
+    })),
+    race: character!.race,
+    className: character!.class,
+    subclass: primarySubclass,
+    level: character!.level,
+    characterClasses: characterClassList,
+  })
+
+  console.log('[CharacterPage] derived values ok, ac=', initialAC.total, 'rendering')
 
   return (
     <CharacterSheet
@@ -219,13 +268,27 @@ async function renderCharacterPage({ id }: { id: string }) {
       hp={{ max: hpRow?.max_hp ?? 0, current: hpRow?.current_hp ?? 0, temp: hpRow?.temp_hp ?? 0 }}
       profBonus={pb}
       initiative={mod(statScores.DEX)}
-      ac={10 + mod(statScores.DEX)}
+      initialAC={initialAC.total}
+      initialACBreakdown={initialAC.breakdown}
       speed={speed}
       size={(raceRow?.size as string | null) ?? 'Medium'}
       passivePerception={passivePerception}
       savingThrows={savingThrows}
       skillList={skillList}
       spellSlots={computeSpellSlots(character!.class, character!.level)}
+      initialItems={initialItems}
+      initialActiveEffects={(activeEffectRows ?? []).map((e) => ({
+        id: e.id as string,
+        character_id: e.character_id as string,
+        effect_name: e.effect_name as string,
+        effect_type: e.effect_type as string,
+        value: e.value as number,
+        source: e.source as string | null,
+        source_name: e.source_name as string | null,
+        expires_at: e.expires_at as string | null,
+        created_at: e.created_at as string,
+      }))}
+      characterClasses={characterClassList}
       classInfo={classRow ? {
         description: classRow.description ?? '',
         hit_die: classRow.hit_die ?? 8,

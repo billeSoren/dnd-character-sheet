@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
@@ -13,6 +13,8 @@ import {
   rarityColor, rarityBorder,
   magicBonus, weaponDamage, isFinesseWeapon, isWeaponType,
 } from '@/components/magic-items/magic-item-types'
+import { calculateAC, ACResult } from '@/lib/ac-calculator'
+import LevelUpModal from '@/components/LevelUpModal'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -23,20 +25,47 @@ interface CharacterData {
 interface SaveThrow { key: StatKey; label: string; proficient: boolean; total: number }
 interface Skill      { name: string; ability: StatKey; proficient: boolean; total: number }
 
+export interface CharacterClass {
+  id: string
+  character_id: string
+  class_id: string | null
+  class_name: string
+  level: number
+  subclass: string | null
+  is_primary: boolean
+  hit_die: number
+}
+
+export interface CharacterActiveEffect {
+  id: string
+  character_id: string
+  effect_name: string
+  effect_type: string
+  value: number
+  source: string | null
+  source_name: string | null
+  expires_at: string | null
+  created_at: string
+}
+
 export interface CharacterSheetProps {
-  character:        CharacterData
-  statScores:       Record<StatKey, number>
-  hp:               { max: number; current: number; temp: number }
-  profBonus:        number
-  initiative:       number
-  ac:               number
-  speed:            number
-  size:             string
-  passivePerception:number
-  savingThrows:     SaveThrow[]
-  skillList:        Skill[]
-  spellSlots:       number[]            // 9 elements: slots per spell level
-  classInfo:        {
+  character:         CharacterData
+  statScores:        Record<StatKey, number>
+  hp:                { max: number; current: number; temp: number }
+  profBonus:         number
+  initiative:        number
+  initialAC:         number
+  initialACBreakdown:string[]
+  speed:             number
+  size:              string
+  passivePerception: number
+  savingThrows:      SaveThrow[]
+  skillList:         Skill[]
+  spellSlots:        number[]
+  initialItems:      CharacterItemWithItem[]
+  initialActiveEffects: CharacterActiveEffect[]
+  characterClasses:  CharacterClass[]
+  classInfo:         {
     description: string; hit_die: number
     armor_proficiencies: string; weapon_proficiencies: string
     primary_ability: string; saving_throws: string[]
@@ -69,9 +98,49 @@ const STAT_META: { key: StatKey; abbr: string; label: string }[] = [
 // ── Root component ─────────────────────────────────────────────────────────────
 
 export default function CharacterSheet(props: CharacterSheetProps) {
-  const { character, statScores, hp, profBonus, initiative, ac, speed,
-          passivePerception, savingThrows, skillList, spellSlots,
-          classInfo, raceInfo } = props
+  const {
+    character, statScores, hp, profBonus, initiative, speed,
+    passivePerception, savingThrows, skillList, spellSlots,
+    initialItems = [], initialActiveEffects = [], characterClasses = [],
+    classInfo, raceInfo,
+  } = props
+
+  // Lifted item state (shared between EquipmentTab and AC calc)
+  const [items, setItems] = useState<CharacterItemWithItem[]>(initialItems)
+
+  // Active effects state (drives client-side AC recalculation)
+  const [activeEffects, setActiveEffects] = useState<CharacterActiveEffect[]>(initialActiveEffects)
+
+  // Recompute AC whenever items/effects/stats change
+  const acResult: ACResult = useMemo(() => {
+    const primarySubclass = characterClasses.find((c) => c.is_primary)?.subclass ?? null
+    return calculateAC({
+      statScores,
+      equippedItems: items
+        .filter((ci) => ci.equipped)
+        .map((ci) => ({ name: ci.magic_items.name, type: ci.magic_items.type, equipped: true })),
+      activeEffects: activeEffects.map((e) => ({
+        id: e.id,
+        effect_name: e.effect_name,
+        effect_type: e.effect_type,
+        value: e.value,
+        source: e.source,
+        source_name: e.source_name,
+      })),
+      race: character.race,
+      className: character.class,
+      subclass: primarySubclass,
+      level: character.level,
+      characterClasses: characterClasses.map((c) => ({
+        class_name: c.class_name, level: c.level, subclass: c.subclass,
+      })),
+    })
+  }, [items, activeEffects, statScores, character.race, character.class, character.level, characterClasses])
+
+  // Multiclass label for header
+  const classLabel = characterClasses.length > 1
+    ? characterClasses.map((c) => `${c.class_name} ${c.level}`).join(' / ')
+    : character.class
 
   return (
     <div className="min-h-screen bg-dnd-bg">
@@ -86,7 +155,7 @@ export default function CharacterSheet(props: CharacterSheetProps) {
           <div className="h-4 w-px bg-dnd-border flex-shrink-0" />
           <span className="font-bold text-dnd-accent tracking-wide">{character.name}</span>
           <span className="text-dnd-muted text-sm hidden sm:block">
-            {character.race} · {character.class} · Level {character.level}
+            {character.race} · {classLabel} · Level {character.level}
           </span>
           <div className="ml-auto"><ThemeToggle /></div>
         </div>
@@ -98,12 +167,17 @@ export default function CharacterSheet(props: CharacterSheetProps) {
         {/* ═══ LEFT COLUMN ════════════════════════════════════════ */}
         <LeftPanel
           character={character}
+          statScores={statScores}
+          hp={hp}
           profBonus={profBonus}
           initiative={initiative}
-          ac={ac}
+          acResult={acResult}
+          activeEffects={activeEffects}
+          setActiveEffects={setActiveEffects}
           speed={speed}
           passivePerception={passivePerception}
           classInfo={classInfo}
+          characterClasses={characterClasses}
         />
 
         {/* ═══ CENTRE COLUMN ══════════════════════════════════════ */}
@@ -123,6 +197,8 @@ export default function CharacterSheet(props: CharacterSheetProps) {
           spellSlots={spellSlots}
           classInfo={classInfo}
           raceInfo={raceInfo}
+          items={items}
+          setItems={setItems}
         />
       </div>
     </div>
@@ -131,12 +207,30 @@ export default function CharacterSheet(props: CharacterSheetProps) {
 
 // ── LEFT COLUMN ────────────────────────────────────────────────────────────────
 
-function LeftPanel({ character, profBonus, initiative, ac, speed, passivePerception, classInfo }:
-  Pick<CharacterSheetProps, 'character'|'profBonus'|'initiative'|'ac'|'speed'|'passivePerception'|'classInfo'>
-) {
+interface LeftPanelProps {
+  character:       CharacterData
+  statScores:      Record<StatKey, number>
+  hp:              { max: number; current: number; temp: number }
+  profBonus:       number
+  initiative:      number
+  acResult:        ACResult
+  activeEffects:   CharacterActiveEffect[]
+  setActiveEffects: React.Dispatch<React.SetStateAction<CharacterActiveEffect[]>>
+  speed:           number
+  passivePerception: number
+  classInfo:       CharacterSheetProps['classInfo']
+  characterClasses: CharacterClass[]
+}
+
+function LeftPanel({
+  character, statScores, hp, profBonus, initiative, acResult, activeEffects, setActiveEffects,
+  speed, passivePerception, classInfo, characterClasses,
+}: LeftPanelProps) {
   const router  = useRouter()
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deleting,   setDeleting]   = useState(false)
+  const [deleteOpen,   setDeleteOpen]   = useState(false)
+  const [deleting,     setDeleting]     = useState(false)
+  const [levelUpOpen,  setLevelUpOpen]  = useState(false)
+  const [acTooltip,    setAcTooltip]    = useState(false)
 
   const handleDelete = async () => {
     setDeleting(true)
@@ -153,7 +247,6 @@ function LeftPanel({ character, profBonus, initiative, ac, speed, passivePercept
       {/* Portrait + identity */}
       <Sheet>
         <div className="flex flex-col items-center gap-3 py-1">
-          {/* Portrait circle */}
           <div
             className="w-20 h-20 rounded-full border-[3px] border-dnd-accent/60 flex items-center justify-center text-2xl font-bold text-dnd-accent select-none"
             style={{ background: 'linear-gradient(135deg, var(--dnd-subtle), var(--dnd-bg))' }}
@@ -187,17 +280,80 @@ function LeftPanel({ character, profBonus, initiative, ac, speed, passivePercept
       {/* Quick stats grid */}
       <Sheet>
         <div className="grid grid-cols-2 gap-2">
-          <QuickStat label="Proficiency" value={`+${profBonus}`} accent />
-          <QuickStat label="Initiative"  value={modStr(initiative)} accent={initiative > 0} />
-          <QuickStat label="Armour Class" value={String(ac)} />
-          <QuickStat label="Speed"       value={`${speed} ft`} />
+          <QuickStat label="Proficiency"   value={`+${profBonus}`} accent />
+          <QuickStat label="Initiative"    value={modStr(initiative)} accent={initiative > 0} />
+          {/* AC with breakdown tooltip */}
+          <div className="relative col-span-1">
+            <div className="flex flex-col items-center py-2.5 px-1 rounded-lg border border-dnd-border bg-dnd-subtle text-center">
+              <div className="flex items-center gap-1">
+                <span className="text-lg font-bold leading-none text-dnd-text">{acResult.total}</span>
+                <button
+                  type="button"
+                  onClick={() => setAcTooltip((p) => !p)}
+                  className="w-4 h-4 rounded-full border border-dnd-muted/40 text-dnd-muted hover:text-dnd-accent hover:border-dnd-accent/40 transition-colors flex items-center justify-center text-[10px] leading-none flex-shrink-0"
+                  title="AC breakdown"
+                >
+                  i
+                </button>
+              </div>
+              <span className="text-[9px] font-semibold text-dnd-muted uppercase tracking-wide mt-1 leading-tight">
+                Armour Class
+              </span>
+            </div>
+            {acTooltip && (
+              <div className="absolute left-0 right-0 top-full mt-1 z-30 rounded-lg border border-dnd-border bg-gray-900 shadow-xl p-3">
+                <p className="text-[10px] font-bold text-dnd-muted uppercase tracking-widest mb-2">Breakdown</p>
+                {acResult.breakdown.map((line, i) => (
+                  <p
+                    key={i}
+                    className={`text-xs leading-relaxed ${
+                      line.startsWith('=') ? 'text-dnd-accent font-bold mt-1' : 'text-dnd-text'
+                    }`}
+                  >
+                    {line}
+                  </p>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setAcTooltip(false)}
+                  className="mt-2 text-[10px] text-dnd-muted hover:text-dnd-text transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+          <QuickStat label="Speed"         value={`${speed} ft`} />
           <QuickStat label="Passive Perc." value={String(passivePerception)} />
-          <QuickStat label="Hit Dice"    value={hitDice} />
+          <QuickStat label="Hit Dice"      value={hitDice} />
         </div>
       </Sheet>
 
       {/* Inspiration */}
       <InspirationToggle />
+
+      {/* Active Effects */}
+      <ActiveEffectsPanel
+        characterId={character.id}
+        activeEffects={activeEffects}
+        setActiveEffects={setActiveEffects}
+        character={character}
+        characterClasses={characterClasses}
+      />
+
+      {/* Level Up button */}
+      {character.level < 20 && (
+        <button
+          type="button"
+          onClick={() => setLevelUpOpen(true)}
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-amber-500/30 text-amber-400/70 hover:text-amber-300 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all text-xs font-semibold tracking-wide"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+          Level Up
+        </button>
+      )}
 
       {/* Delete character */}
       <button
@@ -220,6 +376,16 @@ function LeftPanel({ character, profBonus, initiative, ac, speed, passivePercept
           onConfirm={handleDelete}
         />
       )}
+
+      {levelUpOpen && (
+        <LevelUpModalWrapper
+          character={character}
+          characterClasses={characterClasses}
+          statScores={statScores}
+          hpMax={hp.max}
+          onClose={() => setLevelUpOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -234,6 +400,234 @@ function QuickStat({ label, value, accent }: { label: string; value: string; acc
         {label}
       </span>
     </div>
+  )
+}
+
+// ── Active Effects Panel ───────────────────────────────────────────────────────
+
+interface EffectPreset {
+  key: string
+  effect_name: string
+  effect_type: string
+  value: number
+  source: string
+  source_name: string
+  /** If defined, only show this preset when the character has one of these classes */
+  showForClasses?: string[]
+  /** If defined, only show when character has one of these subclasses */
+  showForSubclasses?: string[]
+}
+
+const AC_PRESETS: EffectPreset[] = [
+  {
+    key: 'mage_armor',
+    effect_name: 'Mage Armor',
+    effect_type: 'ac_bonus',
+    value: 0,
+    source: 'spell',
+    source_name: 'Mage Armor',
+    showForClasses: ['Wizard', 'Sorcerer', 'Warlock'],
+  },
+  {
+    key: 'shield_of_faith',
+    effect_name: '+2 Shield of Faith',
+    effect_type: 'ac_bonus',
+    value: 2,
+    source: 'spell',
+    source_name: 'Shield of Faith',
+    showForClasses: ['Cleric', 'Paladin'],
+  },
+  {
+    key: 'barkskin',
+    effect_name: 'Barkskin (min 16)',
+    effect_type: 'ac_set_minimum',
+    value: 16,
+    source: 'spell',
+    source_name: 'Barkskin',
+    showForClasses: ['Druid', 'Ranger'],
+  },
+  {
+    key: 'bladesong',
+    effect_name: 'Bladesong (INT to AC)',
+    effect_type: 'ac_bonus',
+    value: 0,
+    source: 'feature',
+    source_name: 'Bladesong',
+    showForSubclasses: ['bladesinger', 'bladesong'],
+  },
+  {
+    key: 'medium_armor_master',
+    effect_name: 'Medium Armor Master',
+    effect_type: 'ac_bonus',
+    value: 0,
+    source: 'feat',
+    source_name: 'Medium Armor Master',
+  },
+  {
+    key: 'haste',
+    effect_name: '+2 Haste (AC)',
+    effect_type: 'ac_bonus',
+    value: 2,
+    source: 'spell',
+    source_name: 'Haste',
+  },
+]
+
+function ActiveEffectsPanel({
+  characterId, activeEffects, setActiveEffects, character, characterClasses,
+}: {
+  characterId: string
+  activeEffects: CharacterActiveEffect[]
+  setActiveEffects: React.Dispatch<React.SetStateAction<CharacterActiveEffect[]>>
+  character: CharacterData
+  characterClasses: CharacterClass[]
+}) {
+  const supabase = createClient()
+  const [saving,    setSaving]    = useState(false)
+  const [expanded,  setExpanded]  = useState(false)
+
+  const allClassNames = [
+    character.class,
+    ...characterClasses.map((c) => c.class_name),
+  ]
+  const allSubclasses = characterClasses
+    .map((c) => (c.subclass ?? '').toLowerCase())
+    .filter(Boolean)
+
+  // Filter presets to show based on class/subclass
+  const relevantPresets = AC_PRESETS.filter((p) => {
+    if (p.showForClasses && !p.showForClasses.some((cls) => allClassNames.includes(cls))) {
+      return false
+    }
+    if (p.showForSubclasses && !p.showForSubclasses.some((sub) => allSubclasses.some((s) => s.includes(sub)))) {
+      return false
+    }
+    return true
+  })
+
+  const isActive = (preset: EffectPreset) =>
+    activeEffects.some((e) => e.source_name === preset.source_name)
+
+  const toggleEffect = async (preset: EffectPreset) => {
+    setSaving(true)
+    const active = isActive(preset)
+    if (active) {
+      // Remove from DB + state
+      const toRemove = activeEffects.filter((e) => e.source_name === preset.source_name)
+      await Promise.all(
+        toRemove.map((e) => supabase.from('character_active_effects').delete().eq('id', e.id))
+      )
+      setActiveEffects((prev) => prev.filter((e) => e.source_name !== preset.source_name))
+    } else {
+      // Insert into DB + state
+      const { data, error } = await supabase
+        .from('character_active_effects')
+        .insert({
+          character_id: characterId,
+          effect_name: preset.effect_name,
+          effect_type: preset.effect_type,
+          value: preset.value,
+          source: preset.source,
+          source_name: preset.source_name,
+        })
+        .select()
+        .single()
+      if (!error && data) {
+        setActiveEffects((prev) => [
+          ...prev,
+          data as CharacterActiveEffect,
+        ])
+      }
+    }
+    setSaving(false)
+  }
+
+  const activeCount = relevantPresets.filter(isActive).length
+
+  return (
+    <Sheet>
+      <button
+        type="button"
+        onClick={() => setExpanded((p) => !p)}
+        className="w-full flex items-center justify-between"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-dnd-muted uppercase tracking-widest">
+            Active Effects
+          </span>
+          {activeCount > 0 && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-dnd-accent/20 text-dnd-accent font-bold">
+              {activeCount}
+            </span>
+          )}
+          {saving && <span className="text-[9px] text-dnd-muted animate-pulse">saving…</span>}
+        </div>
+        <svg
+          className={`w-3 h-3 text-dnd-muted transition-transform ${expanded ? 'rotate-180' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-1.5">
+          {relevantPresets.map((preset) => {
+            const active = isActive(preset)
+            return (
+              <button
+                key={preset.key}
+                type="button"
+                onClick={() => toggleEffect(preset)}
+                disabled={saving}
+                className={`w-full flex items-center gap-2 py-1.5 px-2 rounded-lg border text-left transition-all disabled:opacity-40 ${
+                  active
+                    ? 'border-dnd-accent/50 bg-dnd-accent/10 text-dnd-accent'
+                    : 'border-dnd-border bg-dnd-subtle text-dnd-muted hover:text-dnd-text hover:border-dnd-border/80'
+                }`}
+              >
+                <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
+                  active ? 'bg-dnd-accent border-dnd-accent' : 'border-dnd-muted'
+                }`} />
+                <span className="text-xs font-medium leading-tight">{preset.effect_name}</span>
+              </button>
+            )
+          })}
+          {relevantPresets.length === 0 && (
+            <p className="text-xs text-dnd-muted text-center py-1 opacity-60">
+              No presets for this class.
+            </p>
+          )}
+        </div>
+      )}
+    </Sheet>
+  )
+}
+
+// ── Level Up Modal Wrapper ─────────────────────────────────────────────────────
+
+function LevelUpModalWrapper({
+  character, characterClasses, statScores, hpMax, onClose,
+}: {
+  character: CharacterData
+  characterClasses: CharacterClass[]
+  statScores: Record<StatKey, number>
+  hpMax: number
+  onClose: () => void
+}) {
+  const primaryClass = characterClasses.find((c) => c.is_primary)?.class_name ?? character.class
+  return (
+    <LevelUpModal
+      characterId={character.id}
+      characterName={character.name}
+      primaryClass={primaryClass}
+      totalLevel={character.level}
+      statScores={statScores}
+      hpMax={hpMax}
+      characterClasses={characterClasses as unknown as { id: string; character_id: string; class_name: string; level: number; is_primary: boolean; subclass: string | null; hit_die: number; class_id: string | null }[]}
+      onClose={onClose}
+      onLevelUpComplete={() => { onClose(); window.location.reload() }}
+    />
   )
 }
 
@@ -327,22 +721,15 @@ function CentrePanel({ character, statScores, hp, savingThrows, skillList }:
 
 // ── RIGHT COLUMN ───────────────────────────────────────────────────────────────
 
-function RightPanel({ character, statScores, profBonus, spellSlots, classInfo, raceInfo }:
-  Pick<CharacterSheetProps, 'character'|'statScores'|'profBonus'|'spellSlots'|'classInfo'|'raceInfo'>
+function RightPanel({ character, statScores, profBonus, spellSlots, classInfo, raceInfo, items, setItems }:
+  Pick<CharacterSheetProps, 'character'|'statScores'|'profBonus'|'spellSlots'|'classInfo'|'raceInfo'> & {
+    items: CharacterItemWithItem[]
+    setItems: React.Dispatch<React.SetStateAction<CharacterItemWithItem[]>>
+  }
 ) {
-  const supabase = createClient()
   const [tab, setTab] = useState<Tab>('actions')
-  const [characterItems, setCharacterItems] = useState<CharacterItemWithItem[]>([])
-
-  // Fetch character items once on mount
-  useEffect(() => {
-    supabase
-      .from('character_items')
-      .select('*, magic_items(*)')
-      .eq('character_id', character.id)
-      .then(({ data }) => setCharacterItems((data ?? []) as CharacterItemWithItem[]))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [character.id])
+  const characterItems = items
+  const setCharacterItems = setItems
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'actions',   label: 'Actions'   },

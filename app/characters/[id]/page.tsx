@@ -1,5 +1,4 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { skills as allSkills } from '@/lib/dnd-data'
 import { StatKey } from '@/components/character-builder/types'
 import CharacterSheet from '@/components/CharacterSheet'
 import { notFound, redirect } from 'next/navigation'
@@ -165,11 +164,10 @@ async function renderCharacterPage({ id }: { id: string }) {
     'Sleight of Hand': 'DEX', Stealth: 'DEX', Survival: 'WIS',
   }
   const proficiencySet = new Set(character.skill_proficiencies ?? [])
-  const skillList = allSkills
-    .map((skill) => {
-      const ability = (SKILL_ABILITY[skill.name] ?? skill.ability) as StatKey
-      const proficient = proficiencySet.has(skill.name)
-      return { name: skill.name, ability, proficient, total: mod(statScores[ability]) + (proficient ? pb : 0) }
+  const skillList = Object.entries(SKILL_ABILITY)
+    .map(([name, ability]) => {
+      const proficient = proficiencySet.has(name)
+      return { name, ability, proficient, total: mod(statScores[ability]) + (proficient ? pb : 0) }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
 

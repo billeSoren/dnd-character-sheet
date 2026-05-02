@@ -190,6 +190,8 @@ export interface Database {
           equipped: boolean
           attuned: boolean
           added_at: string
+          quantity: number
+          notes: string | null
         }
         Insert: {
           id?: string
@@ -198,6 +200,8 @@ export interface Database {
           equipped?: boolean
           attuned?: boolean
           added_at?: string
+          quantity?: number
+          notes?: string | null
         }
         Update: {
           id?: string
@@ -206,6 +210,8 @@ export interface Database {
           equipped?: boolean
           attuned?: boolean
           added_at?: string
+          quantity?: number
+          notes?: string | null
         }
         Relationships: []
       }

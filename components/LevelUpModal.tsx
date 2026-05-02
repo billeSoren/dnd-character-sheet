@@ -172,7 +172,7 @@ export default function LevelUpModal({
     // handle gracefully.
     ;(sb.from as (t: string) => ReturnType<typeof sb.from>)('subclasses')
       .select('id, name, description, source')
-      .ilike('class_name', selectedClassName)
+      .ilike('class', selectedClassName)
       .order('name')
       .then(({ data, error: fetchErr }: { data: unknown; error: unknown }) => {
         if (cancelled) return

@@ -55,9 +55,6 @@ const STAT_LABELS: Record<StatKey, string> = {
   CHA: 'Charisma',
 }
 
-// Core WotC sources always shown regardless of character preferences.
-const OFFICIAL_SOURCES = ['PHB', 'PHB24', 'BR', 'DMG', 'DMG24', 'MM', 'SRD']
-
 // Used when allowedSources prop is absent (e.g. character pre-dates the column).
 // Covers all major WotC releases; excludes third-party / homebrew by default.
 const DEFAULT_ALLOWED_SOURCES = [
@@ -206,14 +203,19 @@ export default function LevelUpModal({
           const effectiveSources = (allowedSources && allowedSources.length > 0)
             ? allowedSources
             : DEFAULT_ALLOWED_SOURCES
-          const filtered = (
-            data as Array<{ id: string; name: string; description: string | null; source: string | null }>
-          ).filter((s) =>
-            !s.source ||
-            OFFICIAL_SOURCES.includes(s.source) ||
-            effectiveSources.includes(s.source)
-          )
-          setDbSubclasses(filtered)
+          const rows = data as Array<{ id: string; name: string; description: string | null; source: string | null }>
+
+          // Respect allowedSources exactly — no OFFICIAL_SOURCES bypass so
+          // PHB24 subclasses are excluded for 5e characters.
+          const filtered = rows.filter((s) => !s.source || effectiveSources.includes(s.source))
+
+          // If the character's sources yield nothing (e.g. a very narrow source
+          // set), fall back to PHB (2014) rather than PHB24.
+          const toShow = filtered.length > 0
+            ? filtered
+            : rows.filter((s) => !s.source || s.source === 'PHB')
+
+          setDbSubclasses(toShow)
         }
         setLoadingSubclasses(false)
         setSubclassFetchDone(true)

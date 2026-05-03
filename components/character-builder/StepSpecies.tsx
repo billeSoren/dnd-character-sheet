@@ -51,6 +51,7 @@ const PARENT_RACE_MAP: Record<string, string> = {
   'MARK OF SHADOW ELF': 'ELF',
 
   // ── Half-Elf ────────────────────────────────────────────────────────────────
+  'HALF-ELF': 'HALF-ELF',                      // base race → same group key
   'HIGH HALF-ELF': 'HALF-ELF', 'WOOD HALF-ELF': 'HALF-ELF',
   'DROW HALF-ELF': 'HALF-ELF', 'AQUATIC HALF-ELF': 'HALF-ELF',
   'MARK OF DETECTION HALF-ELF': 'HALF-ELF', 'MARK OF STORM HALF-ELF': 'HALF-ELF',
@@ -90,6 +91,7 @@ const PARENT_RACE_MAP: Record<string, string> = {
   'GITHYANKI': 'GITH', 'GITHZERAI': 'GITH',
 
   // ── Tiefling ───────────────────────────────────────────────────────────────
+  'TIEFLING': 'TIEFLING',                       // base race → same group key
   'ASMODEUS TIEFLING': 'TIEFLING', 'BAALZEBUL TIEFLING': 'TIEFLING',
   'DISPATER TIEFLING': 'TIEFLING', 'FIERNA TIEFLING': 'TIEFLING',
   'GLASYA TIEFLING': 'TIEFLING', 'LEVISTUS TIEFLING': 'TIEFLING',

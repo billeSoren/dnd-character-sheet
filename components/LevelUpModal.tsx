@@ -204,15 +204,27 @@ export default function LevelUpModal({
             ? allowedSources
             : DEFAULT_ALLOWED_SOURCES
           const rows = data as Array<{ id: string; name: string; description: string | null; source: string | null }>
+          const is55e = effectiveSources.includes('PHB24')
 
-          // Respect allowedSources exactly — no OFFICIAL_SOURCES bypass so
-          // PHB24 subclasses are excluded for 5e characters.
+          // Filter to allowed sources, then dedup by name keeping the
+          // edition-appropriate version: PHB24 wins for 5.5e, PHB wins for 5e.
+          const editionPriority = is55e ? ['PHB24', 'PHB'] : ['PHB', 'PHB24']
           const filtered = rows.filter((s) => !s.source || effectiveSources.includes(s.source))
+          const seen = new Map<string, typeof rows[0]>()
+          for (const row of filtered) {
+            const existing = seen.get(row.name)
+            if (!existing) { seen.set(row.name, row); continue }
+            const cur  = editionPriority.indexOf(row.source ?? '')
+            const best = editionPriority.indexOf(existing.source ?? '')
+            const curRank  = cur  === -1 ? Infinity : cur
+            const bestRank = best === -1 ? Infinity : best
+            if (curRank < bestRank) seen.set(row.name, row)
+          }
+          const deduped = Array.from(seen.values())
 
-          // If the character's sources yield nothing (e.g. a very narrow source
-          // set), fall back to PHB (2014) rather than PHB24.
-          const toShow = filtered.length > 0
-            ? filtered
+          // If the character's sources yield nothing fall back to PHB (2014).
+          const toShow = deduped.length > 0
+            ? deduped
             : rows.filter((s) => !s.source || s.source === 'PHB')
 
           setDbSubclasses(toShow)

@@ -121,10 +121,18 @@ export default function NewCharacterPage() {
     if (!user) { router.push('/login'); return }
 
     const isCustomOrigin = ['Custom Lineage', 'Custom'].includes(formData.race)
-    const racialBonus = (stat: StatKey): number =>
-      isCustomOrigin
-        ? (formData.customLineageChoices.abilityBonuses[stat] ?? 0)
-        : (selectedRace?.ability_bonuses?.[stat] ?? 0)
+    const racialBonus = (stat: StatKey): number => {
+      if (isCustomOrigin) return formData.customLineageChoices.abilityBonuses[stat] ?? 0
+      // Apply Tasha's ability-score replacements: each source bonus may be redirected to a different stat
+      const baseBonuses = selectedRace?.ability_bonuses ?? {}
+      const replacements = formData.originCustomizations.abilityScoreReplacements
+      let total = 0
+      for (const [fromStat, bonus] of Object.entries(baseBonuses)) {
+        const effectiveStat = replacements[fromStat] ?? fromStat
+        if (effectiveStat === stat) total += bonus
+      }
+      return total
+    }
 
     const finalStats = {
       STR: formData.baseStats.STR + racialBonus('STR'),

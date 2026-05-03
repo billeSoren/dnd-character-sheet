@@ -79,6 +79,22 @@ export const DEFAULT_CUSTOM_LINEAGE: CustomLineageChoices = {
   description: '',
 }
 
+/** Tasha's "Customize Your Origin" overrides — all replacements are optional. */
+export interface OriginCustomizations {
+  /** fromStat → toStat: e.g. { STR: 'DEX' } redirects the racial STR bonus to DEX */
+  abilityScoreReplacements: Record<string, string>
+  /** oldProficiency → newProficiency from the same category (skill/tool/weapon) */
+  proficiencyReplacements: Record<string, string>
+  /** oldLanguage → newLanguage */
+  languageReplacements: Record<string, string>
+}
+
+export const DEFAULT_ORIGIN_CUSTOMIZATIONS: OriginCustomizations = {
+  abilityScoreReplacements: {},
+  proficiencyReplacements: {},
+  languageReplacements: {},
+}
+
 export interface CharacterFormData {
   // Step 0 — preferences
   edition: Edition
@@ -98,6 +114,7 @@ export interface CharacterFormData {
   race: string
   raceId: string | null
   customLineageChoices: CustomLineageChoices
+  originCustomizations: OriginCustomizations
   // Step 4
   abilityMethod: AbilityMethod
   baseStats: Record<StatKey, number>
@@ -123,6 +140,7 @@ export const DEFAULT_FORM_DATA: CharacterFormData = {
   race: '',
   raceId: null,
   customLineageChoices: DEFAULT_CUSTOM_LINEAGE,
+  originCustomizations: DEFAULT_ORIGIN_CUSTOMIZATIONS,
   abilityMethod: 'standard',
   baseStats: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 },
   standardArrayAssignments: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },

@@ -157,6 +157,14 @@ export default function LevelUpModal({
   const [loadingSubclasses, setLoadingSubclasses] = useState(false)
   const [subclassFetchDone, setSubclassFetchDone] = useState(false)
 
+  // ── Optional features state (Tasha's) ────────────────────────────────────
+  const [optionalFeatures, setOptionalFeatures] = useState<Array<{
+    id: string; name: string; description: string; replaces: string | null; level: number
+  }>>([])
+  const [loadingOptional, setLoadingOptional]   = useState(false)
+  const [optionalFetchDone, setOptionalFetchDone] = useState(false)
+  const [selectedOptFeatures, setSelectedOptFeatures] = useState<Set<string>>(new Set())
+
   // ── Flow state ────────────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>('choose_class')
   const [saving, setSaving] = useState(false)
@@ -171,6 +179,9 @@ export default function LevelUpModal({
     prevClassRef.current = selectedClassName
     setDbSubclasses([])
     setSubclassFetchDone(false)
+    setOptionalFeatures([])
+    setOptionalFetchDone(false)
+    setSelectedOptFeatures(new Set())
   }, [selectedClassName])
 
   // Fetch subclasses from the `subclasses` table when the subclass step
@@ -211,6 +222,39 @@ export default function LevelUpModal({
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, selectedClassName, subclassFetchDone])
+
+  // Fetch optional class features (TCE) when the features step becomes active.
+  // Silently no-ops when the table doesn't exist yet.
+  useEffect(() => {
+    if (step !== 'features' || optionalFetchDone || !selectedClassName) return
+    let cancelled = false
+    setLoadingOptional(true)
+
+    const sb = createClient()
+    const effectiveSources = (allowedSources && allowedSources.length > 0)
+      ? allowedSources
+      : DEFAULT_ALLOWED_SOURCES
+
+    ;(sb.from as (t: string) => ReturnType<typeof sb.from>)('optional_class_features')
+      .select('id, name, description, replaces, level')
+      .eq('class_name', selectedClassName)
+      .eq('level', nextClassLevel)
+      .in('source', effectiveSources)
+      .order('name')
+      .then(({ data, error: fetchErr }: { data: unknown; error: unknown }) => {
+        if (cancelled) return
+        if (!fetchErr && Array.isArray(data)) {
+          setOptionalFeatures(
+            data as Array<{ id: string; name: string; description: string; replaces: string | null; level: number }>,
+          )
+        }
+        setLoadingOptional(false)
+        setOptionalFetchDone(true)
+      })
+
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selectedClassName, optionalFetchDone])
 
   // ── Derived computations ──────────────────────────────────────────────────
 
@@ -379,7 +423,21 @@ export default function LevelUpModal({
         }
       }
 
-      // 5. Insert level history
+      // 5. Save adopted optional features to character_active_effects
+      if (selectedOptFeatures.size > 0) {
+        for (const featureName of Array.from(selectedOptFeatures)) {
+          await supabase.from('character_active_effects').insert({
+            character_id: characterId,
+            effect_name:  featureName,
+            effect_type:  'optional_feature',
+            value:        0,
+            source:       'TCE',
+            source_name:  selectedClassName,
+          })
+        }
+      }
+
+      // 6. Insert level history
       await supabase.from('character_level_history').insert({
         character_id: characterId,
         total_level: newTotalLevel,
@@ -723,7 +781,7 @@ export default function LevelUpModal({
               </div>
 
               {newFeatures.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="flex flex-col items-center justify-center py-8 text-center">
                   <span className="text-4xl mb-3">—</span>
                   <p className="text-gray-400 font-medium">No new features at this level.</p>
                   <p className="text-xs text-gray-600 mt-1">Continue to the next step.</p>
@@ -736,6 +794,74 @@ export default function LevelUpModal({
                       <p className="text-xs text-gray-400 leading-relaxed">{feature.description}</p>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* ── Optional features (Tasha's Cauldron) ── */}
+              {(loadingOptional || optionalFeatures.length > 0) && (
+                <div className="border-t border-gray-700 pt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-3 text-purple-400">
+                    Optional Features{' '}
+                    <span className="text-gray-500 font-normal normal-case tracking-normal">
+                      — Tasha&apos;s Cauldron of Everything
+                    </span>
+                  </p>
+
+                  {loadingOptional ? (
+                    <div className="space-y-2">
+                      {[0, 1].map((i) => (
+                        <div key={i} className="h-16 rounded-xl border border-gray-700 bg-gray-800 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {optionalFeatures.map((feat) => {
+                        const isSelected = selectedOptFeatures.has(feat.name)
+                        return (
+                          <button
+                            key={feat.id}
+                            type="button"
+                            onClick={() =>
+                              setSelectedOptFeatures((prev) => {
+                                const next = new Set(prev)
+                                if (next.has(feat.name)) next.delete(feat.name)
+                                else next.add(feat.name)
+                                return next
+                              })
+                            }
+                            className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                              isSelected
+                                ? 'border-purple-500 bg-purple-500/10'
+                                : 'border-gray-700 bg-gray-800 hover:border-purple-500/40'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${
+                                isSelected ? 'border-purple-500 bg-purple-500 text-white' : 'border-gray-500'
+                              }`}>
+                                {isSelected ? '✓' : ''}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`font-semibold text-sm ${isSelected ? 'text-purple-400' : 'text-white'}`}>
+                                    {feat.name}
+                                  </span>
+                                  {feat.replaces && (
+                                    <span className="text-[10px] text-gray-500 italic">
+                                      replaces {feat.replaces}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-400 mt-0.5 leading-relaxed line-clamp-2">
+                                  {feat.description}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1060,6 +1186,23 @@ export default function LevelUpModal({
                     <div className="flex-1">
                       <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Subclass</p>
                       <p className="text-sm font-bold text-purple-300 mt-0.5">{subclassChoice}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Optional features */}
+                {selectedOptFeatures.size > 0 && (
+                  <div className="px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl">
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
+                      Optional Features Adopted
+                    </p>
+                    <div className="space-y-1">
+                      {Array.from(selectedOptFeatures).map((name) => (
+                        <div key={name} className="flex items-start gap-2">
+                          <span className="text-purple-400 text-xs mt-0.5 flex-shrink-0">✦</span>
+                          <span className="text-sm font-semibold text-purple-300">{name}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

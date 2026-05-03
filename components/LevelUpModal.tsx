@@ -208,17 +208,17 @@ export default function LevelUpModal({
 
           // Filter to allowed sources, then dedup by name keeping the
           // edition-appropriate version: PHB24 wins for 5.5e, PHB wins for 5e.
-          const editionPriority = is55e ? ['PHB24', 'PHB'] : ['PHB', 'PHB24']
           const filtered = rows.filter((s) => !s.source || effectiveSources.includes(s.source))
           const seen = new Map<string, typeof rows[0]>()
-          for (const row of filtered) {
-            const existing = seen.get(row.name)
-            if (!existing) { seen.set(row.name, row); continue }
-            const cur  = editionPriority.indexOf(row.source ?? '')
-            const best = editionPriority.indexOf(existing.source ?? '')
-            const curRank  = cur  === -1 ? Infinity : cur
-            const bestRank = best === -1 ? Infinity : best
-            if (curRank < bestRank) seen.set(row.name, row)
+          for (const sc of filtered) {
+            const key = sc.name.toLowerCase()
+            const existing = seen.get(key)
+            if (!existing) {
+              seen.set(key, sc)
+            } else {
+              const preferNew = is55e ? sc.source === 'PHB24' : sc.source === 'PHB'
+              if (preferNew) seen.set(key, sc)
+            }
           }
           const deduped = Array.from(seen.values())
 

@@ -33,64 +33,100 @@ const RACE_DESCRIPTIONS: Record<string, string> = {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const PARENT_RACE_MAP: Record<string, string> = {
-  // Dwarf
+  // ── Dwarf ──────────────────────────────────────────────────────────────────
   'HILL DWARF': 'DWARF', 'MOUNTAIN DWARF': 'DWARF',
-  'DUERGAR': 'DWARF', 'DUERGAR (GRAY DWARF)': 'DWARF',
-  'DUERGAR (DWARF SUBRACE)': 'DWARF',
-  // Elf
+  'GRAY DWARF': 'DWARF',
+  'DUERGAR': 'DWARF', 'DUERGAR (GRAY DWARF)': 'DWARF', 'DUERGAR (DWARF SUBRACE)': 'DWARF',
+  'MARK OF WARDING DWARF': 'DWARF',
+
+  // ── Elf ────────────────────────────────────────────────────────────────────
   'HIGH ELF': 'ELF', 'WOOD ELF': 'ELF',
   'DARK ELF': 'ELF', 'DARK ELF (DROW)': 'ELF', 'DROW': 'ELF',
-  'ELADRIN': 'ELF', 'SEA ELF': 'ELF', 'SHADAR-KAI': 'ELF',
-  // Halfling
+  'ELADRIN': 'ELF', 'ELADRIN ELF': 'ELF',
+  'ASTRAL ELF': 'ELF',
+  'SEA ELF': 'ELF',
+  'SHADAR-KAI': 'ELF',
+  'PALLID ELF': 'ELF',
+  'VALENAR ELF': 'ELF', 'AERENI ELF': 'ELF',
+  'MARK OF SHADOW ELF': 'ELF',
+
+  // ── Half-Elf ────────────────────────────────────────────────────────────────
+  'HIGH HALF-ELF': 'HALF-ELF', 'WOOD HALF-ELF': 'HALF-ELF',
+  'DROW HALF-ELF': 'HALF-ELF', 'AQUATIC HALF-ELF': 'HALF-ELF',
+  'MARK OF DETECTION HALF-ELF': 'HALF-ELF', 'MARK OF STORM HALF-ELF': 'HALF-ELF',
+
+  // ── Halfling ───────────────────────────────────────────────────────────────
   'LIGHTFOOT HALFLING': 'HALFLING', 'STOUT HALFLING': 'HALFLING',
+  'GHOSTWISE HALFLING': 'HALFLING',
+  'LOTUSDEN HALFLING': 'HALFLING',
   'MARK OF HEALING HALFLING': 'HALFLING', 'MARK OF HOSPITALITY HALFLING': 'HALFLING',
-  // Gnome
+
+  // ── Gnome ──────────────────────────────────────────────────────────────────
   'FOREST GNOME': 'GNOME', 'ROCK GNOME': 'GNOME',
   'DEEP GNOME': 'GNOME', 'DEEP GNOME (SVIRFNEBLIN)': 'GNOME', 'SVIRFNEBLIN': 'GNOME',
-  // Dragonborn
+  'MARK OF SCRIBING GNOME': 'GNOME',
+
+  // ── Dragonborn ─────────────────────────────────────────────────────────────
   'BLACK DRAGONBORN': 'DRAGONBORN', 'BLUE DRAGONBORN': 'DRAGONBORN',
   'BRASS DRAGONBORN': 'DRAGONBORN', 'BRONZE DRAGONBORN': 'DRAGONBORN',
   'COPPER DRAGONBORN': 'DRAGONBORN', 'GOLD DRAGONBORN': 'DRAGONBORN',
   'GREEN DRAGONBORN': 'DRAGONBORN', 'RED DRAGONBORN': 'DRAGONBORN',
   'SILVER DRAGONBORN': 'DRAGONBORN', 'WHITE DRAGONBORN': 'DRAGONBORN',
-  'CHROMATIC DRAGONBORN': 'DRAGONBORN', 'METALLIC DRAGONBORN': 'DRAGONBORN',
+  'CHROMATIC DRAGONBORN': 'DRAGONBORN',
+  'METALLIC DRAGONBORN': 'DRAGONBORN',
   'GEM DRAGONBORN': 'DRAGONBORN',
-  'DRACONBLOOD DRAGONBORN': 'DRAGONBORN', 'RAVENITE DRAGONBORN': 'DRAGONBORN',
-  'DRACONBLOOD': 'DRAGONBORN', 'RAVENITE': 'DRAGONBORN',
-  // Genasi
+  'DRACONBLOOD DRAGONBORN': 'DRAGONBORN', 'DRACONBLOOD': 'DRAGONBORN',
+  'RAVENITE DRAGONBORN': 'DRAGONBORN', 'RAVENITE': 'DRAGONBORN',
+
+  // ── Genasi ─────────────────────────────────────────────────────────────────
   'AIR GENASI': 'GENASI', 'EARTH GENASI': 'GENASI',
   'FIRE GENASI': 'GENASI', 'WATER GENASI': 'GENASI',
   'GENASI (AIR)': 'GENASI', 'GENASI (EARTH)': 'GENASI',
   'GENASI (FIRE)': 'GENASI', 'GENASI (WATER)': 'GENASI',
   'GENASI AIR': 'GENASI', 'GENASI EARTH': 'GENASI',
   'GENASI FIRE': 'GENASI', 'GENASI WATER': 'GENASI',
-  // Gith
+
+  // ── Gith ───────────────────────────────────────────────────────────────────
   'GITHYANKI': 'GITH', 'GITHZERAI': 'GITH',
-  // Tiefling
+
+  // ── Tiefling ───────────────────────────────────────────────────────────────
   'ASMODEUS TIEFLING': 'TIEFLING', 'BAALZEBUL TIEFLING': 'TIEFLING',
   'DISPATER TIEFLING': 'TIEFLING', 'FIERNA TIEFLING': 'TIEFLING',
   'GLASYA TIEFLING': 'TIEFLING', 'LEVISTUS TIEFLING': 'TIEFLING',
   'MAMMON TIEFLING': 'TIEFLING', 'MEPHISTOPHELES TIEFLING': 'TIEFLING',
-  'ZARIEL TIEFLING': 'TIEFLING', 'FERAL TIEFLING': 'TIEFLING',
-  // Aasimar
+  'ZARIEL TIEFLING': 'TIEFLING',
+  'FERAL TIEFLING': 'TIEFLING',
+  'VARIANT FERAL TIEFLING': 'TIEFLING', 'VARIANT TIEFLING': 'TIEFLING',
+
+  // ── Aasimar ────────────────────────────────────────────────────────────────
   'PROTECTOR AASIMAR': 'AASIMAR', 'SCOURGE AASIMAR': 'AASIMAR', 'FALLEN AASIMAR': 'AASIMAR',
   'AASIMAR (PROTECTOR)': 'AASIMAR', 'AASIMAR (SCOURGE)': 'AASIMAR', 'AASIMAR (FALLEN)': 'AASIMAR',
-  // Shifter
+  'VARIANT AASIMAR': 'AASIMAR',
+
+  // ── Shifter ────────────────────────────────────────────────────────────────
   'BEASTHIDE SHIFTER': 'SHIFTER', 'LONGTOOTH SHIFTER': 'SHIFTER',
   'SWIFTSTRIDE SHIFTER': 'SHIFTER', 'WILDHUNT SHIFTER': 'SHIFTER',
-  'SHIFTER (BEASTHIDE)': 'SHIFTER', 'SHIFTER (SWIFTSTRIDE)': 'SHIFTER',
-  'SHIFTER (WILDHUNT)': 'SHIFTER',
-  // Half-Elf subraces
-  'HIGH HALF-ELF': 'HALF-ELF', 'WOOD HALF-ELF': 'HALF-ELF',
-  'DROW HALF-ELF': 'HALF-ELF', 'AQUATIC HALF-ELF': 'HALF-ELF',
-  'MARK OF DETECTION HALF-ELF': 'HALF-ELF', 'MARK OF STORM HALF-ELF': 'HALF-ELF',
-  // Human variants
+  'SHIFTER (BEASTHIDE)': 'SHIFTER', 'SHIFTER (LONGTOOTH)': 'SHIFTER',
+  'SHIFTER (SWIFTSTRIDE)': 'SHIFTER', 'SHIFTER (WILDHUNT)': 'SHIFTER',
+
+  // ── Human ──────────────────────────────────────────────────────────────────
   'VARIANT HUMAN': 'HUMAN',
   'MARK OF FINDING HUMAN': 'HUMAN', 'MARK OF HANDLING HUMAN': 'HUMAN',
   'MARK OF MAKING HUMAN': 'HUMAN', 'MARK OF PASSAGE HUMAN': 'HUMAN',
   'MARK OF SENTINEL HUMAN': 'HUMAN',
-  // Half-Orc (maps to itself for uppercase consistency)
+
+  // ── Half-Orc ───────────────────────────────────────────────────────────────
   'HALF-ORC': 'HALF-ORC',
+  'MARK OF FINDING HALF-ORC': 'HALF-ORC',
+
+  // ── Centaur ────────────────────────────────────────────────────────────────
+  'CENTAUR': 'CENTAUR',
+
+  // ── Minotaur ───────────────────────────────────────────────────────────────
+  'MINOTAUR': 'MINOTAUR',
+
+  // ── Satyr ──────────────────────────────────────────────────────────────────
+  'SATYR': 'SATYR',
 }
 
 function baseName(name: string): string {

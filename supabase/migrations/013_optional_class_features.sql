@@ -23,7 +23,8 @@ CREATE INDEX IF NOT EXISTS optional_class_features_class_level_idx
 ALTER TABLE public.optional_class_features ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can read; only service role can write (migrations only)
-CREATE POLICY IF NOT EXISTS "public_read" ON public.optional_class_features
+DROP POLICY IF EXISTS "public_read" ON public.optional_class_features;
+CREATE POLICY "public_read" ON public.optional_class_features
   FOR SELECT USING (true);
 
 -- ── Seed data: 28 TCE optional features ──────────────────────────────────────

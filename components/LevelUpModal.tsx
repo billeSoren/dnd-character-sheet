@@ -141,10 +141,16 @@ export default function LevelUpModal({
   const [rolledValue, setRolledValue] = useState<number | null>(null)
   const [diceAnimating, setDiceAnimating] = useState(false)
 
-  // ── ASI state ─────────────────────────────────────────────────────────────
+  // ── ASI / Feat state ──────────────────────────────────────────────────────
+  const [asiOrFeat, setAsiOrFeat] = useState<'asi' | 'feat'>('asi')
   const [asiChoice, setAsiChoice] = useState<'double' | 'split'>('double')
   const [asiStat1, setAsiStat1] = useState<StatKey>('STR')
   const [asiStat2, setAsiStat2] = useState<StatKey>('DEX')
+  const [featChoice, setFeatChoice] = useState('')
+  const [featSearch, setFeatSearch] = useState('')
+  const [dbFeats, setDbFeats] = useState<Array<{ id: string; name: string; source: string; description: string }>>([])
+  const [loadingFeats, setLoadingFeats] = useState(false)
+  const [featFetchDone, setFeatFetchDone] = useState(false)
 
   // ── Subclass state ────────────────────────────────────────────────────────
   const [subclassChoice,    setSubclassChoice]    = useState('')
@@ -179,6 +185,10 @@ export default function LevelUpModal({
     setOptionalFeatures([])
     setOptionalFetchDone(false)
     setSelectedOptFeatures(new Set())
+    setDbFeats([])
+    setFeatFetchDone(false)
+    setFeatChoice('')
+    setFeatSearch('')
   }, [selectedClassName])
 
   // Fetch subclasses from the `subclasses` table when the subclass step
@@ -269,6 +279,48 @@ export default function LevelUpModal({
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, selectedClassName, optionalFetchDone])
+
+  // Fetch feats from the `feats` table when the player selects "Take a Feat"
+  // on an ASI step. Deduped by name, edition-preferring same as subclasses.
+  useEffect(() => {
+    if (step !== 'asi' || asiOrFeat !== 'feat' || featFetchDone) return
+    let cancelled = false
+    setLoadingFeats(true)
+
+    const sb = createClient()
+    const effectiveSources = (allowedSources && allowedSources.length > 0)
+      ? allowedSources
+      : DEFAULT_ALLOWED_SOURCES
+
+    ;(sb.from as (t: string) => ReturnType<typeof sb.from>)('feats')
+      .select('id, name, source, description')
+      .in('source', effectiveSources)
+      .order('name')
+      .then(({ data, error: fetchErr }: { data: unknown; error: unknown }) => {
+        if (cancelled) return
+        if (!fetchErr && Array.isArray(data) && data.length > 0) {
+          const rows = data as Array<{ id: string; name: string; source: string; description: string }>
+          const is55e = effectiveSources.includes('PHB24')
+          const seen = new Map<string, typeof rows[0]>()
+          for (const feat of rows) {
+            const key = feat.name.toLowerCase()
+            const existing = seen.get(key)
+            if (!existing) {
+              seen.set(key, feat)
+            } else {
+              const preferNew = is55e ? feat.source === 'PHB24' : feat.source === 'PHB'
+              if (preferNew) seen.set(key, feat)
+            }
+          }
+          setDbFeats(Array.from(seen.values()))
+        }
+        setLoadingFeats(false)
+        setFeatFetchDone(true)
+      })
+
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, asiOrFeat, featFetchDone])
 
   // ── Derived computations ──────────────────────────────────────────────────
 
@@ -411,29 +463,37 @@ export default function LevelUpModal({
         })
       }
 
-      // 4. Apply ASI if chosen
+      // 4. Apply ASI or save Feat
       if (isASILevel) {
-        // Build a typed stat update — Supabase schema uses lowercase column names
-        const statColumnMap: Record<StatKey, string> = {
-          STR: 'strength', DEX: 'dexterity', CON: 'constitution',
-          INT: 'intelligence', WIS: 'wisdom', CHA: 'charisma',
-        }
-        if (asiChoice === 'double') {
-          const col = statColumnMap[asiStat1]
-          const patch = { [col]: Math.min(20, statScores[asiStat1] + 2) } as Record<string, number>
-          await supabase.from('character_stats')
-            // @ts-expect-error dynamic column name not in generated types
-            .update(patch)
-            .eq('character_id', characterId)
-        } else {
-          const col1 = statColumnMap[asiStat1]
-          const col2 = statColumnMap[asiStat2]
-          const payload: Record<string, number> = {
-            [col1]: Math.min(20, statScores[asiStat1] + 1),
-            [col2]: Math.min(20, statScores[asiStat2] + 1),
+        if (asiOrFeat === 'asi') {
+          const statColumnMap: Record<StatKey, string> = {
+            STR: 'strength', DEX: 'dexterity', CON: 'constitution',
+            INT: 'intelligence', WIS: 'wisdom', CHA: 'charisma',
           }
-          // @ts-expect-error dynamic column name not in generated types
-          await supabase.from('character_stats').update(payload).eq('character_id', characterId)
+          if (asiChoice === 'double') {
+            const col = statColumnMap[asiStat1]
+            const patch = { [col]: Math.min(20, statScores[asiStat1] + 2) } as Record<string, number>
+            // @ts-expect-error dynamic column name not in generated types
+            await supabase.from('character_stats').update(patch).eq('character_id', characterId)
+          } else {
+            const col1 = statColumnMap[asiStat1]
+            const col2 = statColumnMap[asiStat2]
+            const payload: Record<string, number> = {
+              [col1]: Math.min(20, statScores[asiStat1] + 1),
+              [col2]: Math.min(20, statScores[asiStat2] + 1),
+            }
+            // @ts-expect-error dynamic column name not in generated types
+            await supabase.from('character_stats').update(payload).eq('character_id', characterId)
+          }
+        } else if (featChoice) {
+          await supabase.from('character_active_effects').insert({
+            character_id: characterId,
+            effect_name:  featChoice,
+            effect_type:  'feat',
+            value:        0,
+            source:       'player_choice',
+            source_name:  selectedClassName,
+          })
         }
       }
 
@@ -458,8 +518,11 @@ export default function LevelUpModal({
         class_name: isAddingNewClass ? (newClassName ?? selectedClassName) : selectedClassName,
         hp_gained: hpGained,
         choices: {
-          ...(isASILevel
+          ...(isASILevel && asiOrFeat === 'asi'
             ? { asi: asiChoice === 'double' ? { [asiStat1]: 2 } : { [asiStat1]: 1, [asiStat2]: 1 } }
+            : {}),
+          ...(isASILevel && asiOrFeat === 'feat' && featChoice
+            ? { feat: featChoice }
             : {}),
           ...(subclassChoice ? { subclass: subclassChoice } : {}),
         },
@@ -887,147 +950,254 @@ export default function LevelUpModal({
               <div>
                 <h3 className="text-base font-bold text-white">Ability Score Improvement</h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  Choose how to spend your ASI at {selectedClassName} Level {nextClassLevel}
+                  {selectedClassName} Level {nextClassLevel} — choose your reward
                 </p>
               </div>
 
-              {/* Choice selector */}
+              {/* Top-level: ASI vs Feat */}
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => setAsiChoice('double')}
-                  className={`px-3 py-3 rounded-xl border transition-all text-sm font-semibold ${
-                    asiChoice === 'double'
+                  onClick={() => setAsiOrFeat('asi')}
+                  className={`flex flex-col items-center gap-1 px-3 py-4 rounded-xl border transition-all ${
+                    asiOrFeat === 'asi'
                       ? 'border-amber-500 bg-amber-500/10 text-amber-400'
                       : 'border-gray-600 bg-gray-800 text-gray-300 hover:border-amber-500/40'
                   }`}
                 >
-                  <p className="text-lg font-bold">+2</p>
-                  <p className="text-xs mt-0.5 font-normal text-gray-400">One ability</p>
+                  <span className="text-2xl font-bold">+2</span>
+                  <span className="text-sm font-semibold">Ability Score</span>
+                  <span className="text-xs text-gray-400 font-normal">Improve your stats</span>
                 </button>
                 <button
-                  onClick={() => setAsiChoice('split')}
-                  className={`px-3 py-3 rounded-xl border transition-all text-sm font-semibold ${
-                    asiChoice === 'split'
-                      ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                      : 'border-gray-600 bg-gray-800 text-gray-300 hover:border-amber-500/40'
+                  onClick={() => setAsiOrFeat('feat')}
+                  className={`flex flex-col items-center gap-1 px-3 py-4 rounded-xl border transition-all ${
+                    asiOrFeat === 'feat'
+                      ? 'border-purple-500 bg-purple-500/10 text-purple-400'
+                      : 'border-gray-600 bg-gray-800 text-gray-300 hover:border-purple-500/40'
                   }`}
                 >
-                  <p className="text-lg font-bold">+1 / +1</p>
-                  <p className="text-xs mt-0.5 font-normal text-gray-400">Two abilities</p>
+                  <span className="text-2xl">✦</span>
+                  <span className="text-sm font-semibold">Take a Feat</span>
+                  <span className="text-xs text-gray-400 font-normal">Special ability</span>
                 </button>
               </div>
 
-              {/* +2 one stat */}
-              {asiChoice === 'double' && (
-                <div className="space-y-3">
-                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Choose stat (+2)</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {STAT_KEYS.map((stat) => {
-                      const current = statScores[stat]
-                      const newVal = Math.min(20, current + 2)
-                      const capped = current >= 20
-                      return (
-                        <button
-                          key={stat}
-                          onClick={() => !capped && setAsiStat1(stat)}
-                          disabled={capped}
-                          className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all ${
-                            capped
-                              ? 'opacity-40 cursor-not-allowed border-gray-700 bg-gray-800/50'
-                              : asiStat1 === stat
-                                ? 'border-amber-500 bg-amber-500/10'
-                                : 'border-gray-600 bg-gray-800 hover:border-amber-500/40'
-                          }`}
-                        >
-                          <span className={`text-xs font-bold uppercase ${asiStat1 === stat ? 'text-amber-400' : 'text-gray-400'}`}>
-                            {stat}
-                          </span>
-                          <span className="text-gray-500 text-xs">
-                            {current}
-                            {!capped && <span className="text-green-400"> → {newVal}</span>}
-                            {capped && <span className="text-gray-600"> max</span>}
-                          </span>
-                        </button>
-                      )
-                    })}
+              {/* ── ASI pickers ── */}
+              {asiOrFeat === 'asi' && (
+                <div className="space-y-4">
+                  {/* +2 vs +1/+1 */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setAsiChoice('double')}
+                      className={`px-3 py-3 rounded-xl border transition-all text-sm font-semibold ${
+                        asiChoice === 'double'
+                          ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                          : 'border-gray-600 bg-gray-800 text-gray-300 hover:border-amber-500/40'
+                      }`}
+                    >
+                      <p className="text-lg font-bold">+2</p>
+                      <p className="text-xs mt-0.5 font-normal text-gray-400">One ability</p>
+                    </button>
+                    <button
+                      onClick={() => setAsiChoice('split')}
+                      className={`px-3 py-3 rounded-xl border transition-all text-sm font-semibold ${
+                        asiChoice === 'split'
+                          ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                          : 'border-gray-600 bg-gray-800 text-gray-300 hover:border-amber-500/40'
+                      }`}
+                    >
+                      <p className="text-lg font-bold">+1 / +1</p>
+                      <p className="text-xs mt-0.5 font-normal text-gray-400">Two abilities</p>
+                    </button>
                   </div>
-                  <div className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-center text-xs text-gray-400">
-                    {STAT_LABELS[asiStat1]}:{' '}
-                    <span className="text-white font-bold">{statScores[asiStat1]}</span>
-                    {' '}<span className="text-gray-500">→</span>{' '}
-                    <span className="text-green-400 font-bold">{Math.min(20, statScores[asiStat1] + 2)}</span>
-                  </div>
-                </div>
-              )}
 
-              {/* +1/+1 two stats */}
-              {asiChoice === 'split' && (
-                <div className="space-y-3">
-                  <div className="space-y-3">
-                    {([1, 2] as const).map((slot) => {
-                      const currentStat = slot === 1 ? asiStat1 : asiStat2
-                      const otherStat = slot === 1 ? asiStat2 : asiStat1
-                      const setStat = slot === 1 ? setAsiStat1 : setAsiStat2
-
-                      return (
-                        <div key={slot}>
-                          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
-                            Stat {slot} (+1)
-                          </p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {STAT_KEYS.map((stat) => {
-                              const current = statScores[stat]
-                              const capped = current >= 20
-                              const isOther = stat === otherStat
-                              return (
-                                <button
-                                  key={stat}
-                                  onClick={() => !capped && setStat(stat)}
-                                  disabled={capped}
-                                  className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border transition-all ${
-                                    capped
-                                      ? 'opacity-40 cursor-not-allowed border-gray-700 bg-gray-800/50'
-                                      : currentStat === stat
-                                        ? 'border-amber-500 bg-amber-500/10'
-                                        : isOther
-                                          ? 'border-blue-500/40 bg-blue-500/5'
-                                          : 'border-gray-600 bg-gray-800 hover:border-amber-500/40'
-                                  }`}
-                                >
-                                  <span className={`text-xs font-bold uppercase ${
-                                    currentStat === stat ? 'text-amber-400' : isOther ? 'text-blue-400' : 'text-gray-400'
-                                  }`}>
-                                    {stat}
-                                  </span>
-                                  <span className="text-gray-500 text-xs">
-                                    {current}
-                                    {!capped && <span className="text-green-400"> → {Math.min(20, current + 1)}</span>}
-                                  </span>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  {asiStat1 === asiStat2 && (
-                    <div className="px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-300 text-xs">
-                      Both stats are the same — the +1 and +1 will apply to the same stat (+2 total).
+                  {/* +2 one stat */}
+                  {asiChoice === 'double' && (
+                    <div className="space-y-3">
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Choose stat (+2)</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {STAT_KEYS.map((stat) => {
+                          const current = statScores[stat]
+                          const newVal = Math.min(20, current + 2)
+                          const capped = current >= 20
+                          return (
+                            <button
+                              key={stat}
+                              onClick={() => !capped && setAsiStat1(stat)}
+                              disabled={capped}
+                              className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all ${
+                                capped
+                                  ? 'opacity-40 cursor-not-allowed border-gray-700 bg-gray-800/50'
+                                  : asiStat1 === stat
+                                    ? 'border-amber-500 bg-amber-500/10'
+                                    : 'border-gray-600 bg-gray-800 hover:border-amber-500/40'
+                              }`}
+                            >
+                              <span className={`text-xs font-bold uppercase ${asiStat1 === stat ? 'text-amber-400' : 'text-gray-400'}`}>
+                                {stat}
+                              </span>
+                              <span className="text-gray-500 text-xs">
+                                {current}
+                                {!capped && <span className="text-green-400"> → {newVal}</span>}
+                                {capped && <span className="text-gray-600"> max</span>}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <div className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-center text-xs text-gray-400">
+                        {STAT_LABELS[asiStat1]}:{' '}
+                        <span className="text-white font-bold">{statScores[asiStat1]}</span>
+                        {' '}<span className="text-gray-500">→</span>{' '}
+                        <span className="text-green-400 font-bold">{Math.min(20, statScores[asiStat1] + 2)}</span>
+                      </div>
                     </div>
                   )}
-                  <div className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-400 space-y-0.5">
-                    <div>{STAT_LABELS[asiStat1]}: <span className="text-white font-bold">{statScores[asiStat1]}</span> → <span className="text-green-400 font-bold">{Math.min(20, statScores[asiStat1] + 1)}</span></div>
-                    {asiStat1 !== asiStat2 && (
-                      <div>{STAT_LABELS[asiStat2]}: <span className="text-white font-bold">{statScores[asiStat2]}</span> → <span className="text-green-400 font-bold">{Math.min(20, statScores[asiStat2] + 1)}</span></div>
-                    )}
-                  </div>
+
+                  {/* +1/+1 two stats */}
+                  {asiChoice === 'split' && (
+                    <div className="space-y-3">
+                      {([1, 2] as const).map((slot) => {
+                        const currentStat = slot === 1 ? asiStat1 : asiStat2
+                        const otherStat = slot === 1 ? asiStat2 : asiStat1
+                        const setStat = slot === 1 ? setAsiStat1 : setAsiStat2
+                        return (
+                          <div key={slot}>
+                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
+                              Stat {slot} (+1)
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {STAT_KEYS.map((stat) => {
+                                const current = statScores[stat]
+                                const capped = current >= 20
+                                const isOther = stat === otherStat
+                                return (
+                                  <button
+                                    key={stat}
+                                    onClick={() => !capped && setStat(stat)}
+                                    disabled={capped}
+                                    className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border transition-all ${
+                                      capped
+                                        ? 'opacity-40 cursor-not-allowed border-gray-700 bg-gray-800/50'
+                                        : currentStat === stat
+                                          ? 'border-amber-500 bg-amber-500/10'
+                                          : isOther
+                                            ? 'border-blue-500/40 bg-blue-500/5'
+                                            : 'border-gray-600 bg-gray-800 hover:border-amber-500/40'
+                                    }`}
+                                  >
+                                    <span className={`text-xs font-bold uppercase ${
+                                      currentStat === stat ? 'text-amber-400' : isOther ? 'text-blue-400' : 'text-gray-400'
+                                    }`}>
+                                      {stat}
+                                    </span>
+                                    <span className="text-gray-500 text-xs">
+                                      {current}
+                                      {!capped && <span className="text-green-400"> → {Math.min(20, current + 1)}</span>}
+                                    </span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {asiStat1 === asiStat2 && (
+                        <div className="px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-300 text-xs">
+                          Both stats are the same — +1 and +1 apply to the same stat (+2 total).
+                        </div>
+                      )}
+                      <div className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-400 space-y-0.5">
+                        <div>{STAT_LABELS[asiStat1]}: <span className="text-white font-bold">{statScores[asiStat1]}</span> → <span className="text-green-400 font-bold">{Math.min(20, statScores[asiStat1] + 1)}</span></div>
+                        {asiStat1 !== asiStat2 && (
+                          <div>{STAT_LABELS[asiStat2]}: <span className="text-white font-bold">{statScores[asiStat2]}</span> → <span className="text-green-400 font-bold">{Math.min(20, statScores[asiStat2] + 1)}</span></div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <p className="text-[10px] text-gray-600 text-center italic">
-                Feat system coming soon
-              </p>
+              {/* ── Feat picker ── */}
+              {asiOrFeat === 'feat' && (
+                <div className="space-y-3">
+                  {/* Search */}
+                  <input
+                    type="text"
+                    value={featSearch}
+                    onChange={(e) => setFeatSearch(e.target.value)}
+                    placeholder="Search feats…"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder:text-gray-600 outline-none focus:border-purple-500 transition-colors text-sm"
+                  />
+
+                  {loadingFeats ? (
+                    <div className="space-y-2">
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} className="h-14 rounded-xl border border-gray-700 bg-gray-800 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : dbFeats.length > 0 ? (
+                    <div className="space-y-1.5 max-h-64 overflow-y-auto pr-0.5">
+                      {dbFeats
+                        .filter((f) =>
+                          !featSearch.trim() ||
+                          f.name.toLowerCase().includes(featSearch.toLowerCase())
+                        )
+                        .map((feat) => (
+                          <button
+                            key={feat.id}
+                            type="button"
+                            onClick={() => setFeatChoice(feat.name)}
+                            className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all ${
+                              featChoice === feat.name
+                                ? 'border-purple-500 bg-purple-500/10 shadow-sm shadow-purple-500/20'
+                                : 'border-gray-700 bg-gray-800 hover:border-purple-500/40'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`font-semibold text-sm leading-tight ${
+                                featChoice === feat.name ? 'text-purple-300' : 'text-white'
+                              }`}>
+                                {feat.name}
+                              </span>
+                              <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 font-medium">
+                                {feat.source}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">
+                              {feat.description}
+                            </p>
+                          </button>
+                        ))
+                      }
+                    </div>
+                  ) : featFetchDone ? (
+                    <p className="text-xs text-gray-500 py-1">
+                      No feats found for your allowed sources — enter a name below.
+                    </p>
+                  ) : null}
+
+                  {/* Free-text fallback */}
+                  <div>
+                    <label className="block text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1.5">
+                      {dbFeats.length > 0 ? 'Or type a custom feat name' : 'Feat Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={featChoice}
+                      onChange={(e) => setFeatChoice(e.target.value)}
+                      placeholder="e.g. Lucky, Sentinel, War Caster…"
+                      className="w-full px-3 py-2.5 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder:text-gray-600 outline-none focus:border-purple-500 transition-colors text-sm"
+                    />
+                  </div>
+
+                  {featChoice && (
+                    <div className="px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-lg text-purple-300 text-xs">
+                      Selected: <span className="font-bold">{featChoice}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1174,8 +1344,8 @@ export default function LevelUpModal({
                   </div>
                 )}
 
-                {/* ASI */}
-                {isASILevel && (
+                {/* ASI or Feat */}
+                {isASILevel && asiOrFeat === 'asi' && (
                   <div className="flex items-center gap-3 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl">
                     <span className="text-lg text-blue-400">★</span>
                     <div className="flex-1">
@@ -1189,6 +1359,15 @@ export default function LevelUpModal({
                             </>
                         }
                       </p>
+                    </div>
+                  </div>
+                )}
+                {isASILevel && asiOrFeat === 'feat' && featChoice && (
+                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl">
+                    <span className="text-lg text-purple-400">✦</span>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Feat</p>
+                      <p className="text-sm font-bold text-purple-300 mt-0.5">{featChoice}</p>
                     </div>
                   </div>
                 )}

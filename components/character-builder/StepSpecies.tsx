@@ -779,8 +779,17 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
         <div className="h-px flex-1 bg-dnd-border" />
       </div>
 
+      {/* ── Tasha's Origin Manager — shown directly after race is chosen, before the list ── */}
+      {!isCustomSelected && selectedRace && (
+        <OriginManager
+          race={selectedRace}
+          customizations={data.originCustomizations}
+          onChange={patchOrigin}
+        />
+      )}
+
       {/* Search */}
-      <div className="relative mb-3">
+      <div className="relative mb-3 mt-3">
         <svg className="absolute left-3 top-3 w-4 h-4 text-dnd-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
         </svg>
@@ -898,14 +907,6 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
         )}
       </div>
 
-      {/* ── Tasha's Origin Manager — shown for any standard race with fixed bonuses ── */}
-      {!isCustomSelected && selectedRace && (
-        <OriginManager
-          race={selectedRace}
-          customizations={data.originCustomizations}
-          onChange={patchOrigin}
-        />
-      )}
     </div>
   )
 }

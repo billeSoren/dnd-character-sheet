@@ -857,20 +857,44 @@ export default function LevelUpModal({
                 </p>
               </div>
 
-              {newFeatures.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <span className="text-4xl mb-3">—</span>
-                  <p className="text-gray-400 font-medium">No new features at this level.</p>
-                  <p className="text-xs text-gray-600 mt-1">Continue to the next step.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {newFeatures.map((feature, i) => (
-                    <div key={i} className="px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl">
-                      <p className="font-bold text-amber-400 text-sm mb-1">{feature.name}</p>
-                      <p className="text-xs text-gray-400 leading-relaxed">{feature.description}</p>
+              {/* Filter out ASI — it has its own dedicated step */}
+              {(() => {
+                const displayFeatures = newFeatures.filter(
+                  (f) => f.name !== 'Ability Score Improvement',
+                )
+                if (displayFeatures.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <span className="text-4xl mb-3">—</span>
+                      <p className="text-gray-400 font-medium">
+                        {isASILevel ? 'No additional features at this level.' : 'No new features at this level.'}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {isASILevel ? 'Continue to choose your ASI or Feat.' : 'Continue to the next step.'}
+                      </p>
                     </div>
-                  ))}
+                  )
+                }
+                return (
+                  <div className="space-y-3">
+                    {displayFeatures.map((feature, i) => (
+                      <div key={i} className="px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl">
+                        <p className="font-bold text-amber-400 text-sm mb-1">{feature.name}</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">{feature.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+
+              {/* ASI teaser — shown only when ASI step follows, to set expectations */}
+              {isASILevel && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                  <span className="text-amber-400 text-lg flex-shrink-0">★</span>
+                  <p className="text-xs text-gray-400">
+                    <span className="text-amber-400 font-semibold">Ability Score Improvement</span>
+                    {' '}— choose to raise your stats or take a Feat in the next step.
+                  </p>
                 </div>
               )}
 

@@ -120,6 +120,7 @@ const PARENT_RACE_MAP: Record<string, string> = {
   // ── Half-Orc ───────────────────────────────────────────────────────────────
   'HALF-ORC': 'HALF-ORC',
   'MARK OF FINDING HALF-ORC': 'HALF-ORC',
+  'HALF-ORC OR HUMAN (MARK OF FINDING)': 'HALF-ORC',
 
   // ── Centaur ────────────────────────────────────────────────────────────────
   'CENTAUR': 'CENTAUR',
@@ -897,8 +898,8 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
         )}
       </div>
 
-      {/* ── Tasha's Origin Manager — only for standard (non-custom) races with TCE allowed ── */}
-      {!isCustomSelected && selectedRace && data.allowedSources.includes('TCE') && (
+      {/* ── Tasha's Origin Manager — shown for any standard race with fixed bonuses ── */}
+      {!isCustomSelected && selectedRace && (
         <OriginManager
           race={selectedRace}
           customizations={data.originCustomizations}

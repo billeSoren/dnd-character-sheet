@@ -1,6 +1,7 @@
 'use client'
 
 import { races } from '@/lib/dnd-data'
+import { DndRace } from '@/lib/dnd-api'
 import {
   CharacterFormData, StatKey, STAT_KEYS, STAT_LABELS,
   AbilityMethod, STANDARD_ARRAY, PB_COST, PB_BUDGET,
@@ -10,6 +11,7 @@ import {
 interface Props {
   data: CharacterFormData
   onChange: (data: Partial<CharacterFormData>) => void
+  selectedDbRace?: DndRace | null
 }
 
 const METHOD_LABELS: Record<AbilityMethod, string> = {
@@ -18,11 +20,91 @@ const METHOD_LABELS: Record<AbilityMethod, string> = {
   manual: 'Manual / Roll',
 }
 
-export default function StepAbilities({ data, onChange }: Props) {
-  const selectedRace = races.find((r) => r.name === data.race)
+// ── Tasha's racial bonus redistribution panel ─────────────────────────────────
 
-  const racialBonus = (stat: StatKey): number =>
-    selectedRace?.abilityBonuses.find((b) => b.ability === stat)?.bonus ?? 0
+function OriginBonusPanel({
+  race,
+  replacements,
+  onChange: onChangeProp,
+}: {
+  race: DndRace
+  replacements: Record<string, string>
+  onChange: (next: Record<string, string>) => void
+}) {
+  const bonuses = Object.entries(race.ability_bonuses ?? {}).filter(([, v]) => v !== 0)
+  if (bonuses.length === 0) return null
+
+  const patch = (fromStat: string, toStat: string) => {
+    const next = { ...replacements }
+    if (toStat === fromStat) delete next[fromStat]
+    else next[fromStat] = toStat
+    onChangeProp(next)
+  }
+
+  const hasChange = Object.keys(replacements).length > 0
+
+  return (
+    <div className="mb-6 border border-dnd-accent/30 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-dnd-subtle border-b border-dnd-border">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-dnd-text">✨ Tasha&apos;s Custom Origin</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-dnd-border text-dnd-muted font-semibold">TCE</span>
+          {hasChange && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-dnd-accent/20 text-dnd-accent font-semibold">
+              modified
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] text-dnd-muted">Redistribute Racial Bonuses</span>
+      </div>
+      <div className="px-4 py-3 space-y-2 bg-dnd-card">
+        {bonuses.map(([fromStat, bonus]) => {
+          const target = replacements[fromStat] ?? fromStat
+          return (
+            <div key={fromStat} className="flex items-center gap-3">
+              <span className="text-xs text-dnd-muted w-24 flex-shrink-0">
+                +{bonus} from {fromStat}
+              </span>
+              <span className="text-dnd-muted text-xs">→</span>
+              <select
+                value={target}
+                onChange={(e) => patch(fromStat, e.target.value)}
+                className="flex-1 px-2 py-1.5 bg-dnd-subtle border border-dnd-border rounded text-sm text-dnd-text outline-none focus:border-dnd-accent"
+              >
+                {STAT_KEYS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}{s === fromStat ? ' (default)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function StepAbilities({ data, onChange, selectedDbRace }: Props) {
+  const staticRace = races.find((r) => r.name === data.race)
+
+  // Racial bonus with Tasha's replacements applied.
+  // Prefers DB race (ability_bonuses dict); falls back to static dnd-data.
+  const racialBonus = (stat: StatKey): number => {
+    if (selectedDbRace?.ability_bonuses) {
+      const repl = data.originCustomizations.abilityScoreReplacements
+      let total = 0
+      for (const [fromStat, bonus] of Object.entries(selectedDbRace.ability_bonuses)) {
+        if (!bonus) continue
+        const effectiveStat = repl[fromStat] ?? fromStat
+        if (effectiveStat === stat) total += bonus
+      }
+      return total
+    }
+    return staticRace?.abilityBonuses.find((b) => b.ability === stat)?.bonus ?? 0
+  }
 
   const totalScore = (stat: StatKey) => data.baseStats[stat] + racialBonus(stat)
 
@@ -46,6 +128,22 @@ export default function StepAbilities({ data, onChange }: Props) {
         <h2 className="text-xl font-bold text-dnd-text mb-1">Ability Scores</h2>
         <p className="text-dnd-muted text-sm">Assign your base ability scores.</p>
       </div>
+
+      {/* Tasha's racial bonus redistribution — only when DB race has fixed bonuses */}
+      {selectedDbRace && (
+        <OriginBonusPanel
+          race={selectedDbRace}
+          replacements={data.originCustomizations.abilityScoreReplacements}
+          onChange={(next) =>
+            onChange({
+              originCustomizations: {
+                ...data.originCustomizations,
+                abilityScoreReplacements: next,
+              },
+            })
+          }
+        />
+      )}
 
       {/* Method tabs */}
       <div className="flex rounded-lg border border-dnd-border overflow-hidden mb-6">

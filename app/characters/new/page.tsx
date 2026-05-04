@@ -292,7 +292,7 @@ export default function NewCharacterPage() {
           {step === 3 && (
             <StepSpecies data={formData} onChange={updateForm} races={dbRaces} loading={dataLoading} />
           )}
-          {step === 4 && <StepAbilities data={formData} onChange={updateForm} />}
+          {step === 4 && <StepAbilities data={formData} onChange={updateForm} selectedDbRace={selectedRace} />}
           {step === 5 && (
             <StepFinish
               data={formData}

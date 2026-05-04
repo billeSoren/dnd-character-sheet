@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { DndRace, formatAbilityBonuses, DEFAULT_SOURCE } from '@/lib/dnd-api'
-import { CharacterFormData, CustomLineageChoices, OriginCustomizations, StatKey, STAT_KEYS } from './types'
+import { CharacterFormData, CustomLineageChoices, StatKey, STAT_KEYS } from './types'
 import StepLoadingSkeleton from './StepLoadingSkeleton'
 
 // ── Icons & descriptions (keyed by Title-Case base name) ──────────────────────
@@ -430,210 +430,6 @@ function CustomLineageForm({
   )
 }
 
-// ── Standard languages list (for Tasha's replacement dropdowns) ───────────────
-
-const STANDARD_LANGUAGES = [
-  'Abyssal', 'Aquan', 'Auran', 'Celestial', 'Common', 'Deep Speech',
-  'Draconic', 'Druidic', 'Dwarvish', 'Elvish', 'Giant', 'Gnomish',
-  'Goblin', 'Halfling', 'Ignan', 'Infernal', 'Orc', 'Primordial',
-  'Sylvan', 'Terran', "Thieves' Cant", 'Undercommon',
-]
-
-// ── Tasha's "Customize Your Origin" manager ───────────────────────────────────
-
-function OriginManager({
-  race,
-  customizations,
-  onChange,
-}: {
-  race: DndRace
-  customizations: OriginCustomizations
-  onChange: (patch: Partial<OriginCustomizations>) => void
-}) {
-  const [open, setOpen] = useState(false)
-
-  const bonuses = Object.entries(race.ability_bonuses ?? {}).filter(([, v]) => v !== 0)
-  // Languages excluding flexible placeholder strings
-  const fixedLangs = (race.languages ?? []).filter(
-    (l) => !l.toLowerCase().startsWith('one of') && !l.toLowerCase().includes('your choice'),
-  )
-  const hasProficiencies = (race.traits ?? []).length > 0
-
-  if (bonuses.length === 0 && fixedLangs.length === 0 && !hasProficiencies) return null
-
-  const patchAbility = (fromStat: string, toStat: string) => {
-    const next = { ...customizations.abilityScoreReplacements }
-    if (toStat === fromStat) {
-      delete next[fromStat]
-    } else {
-      next[fromStat] = toStat
-    }
-    onChange({ abilityScoreReplacements: next })
-  }
-
-  const patchLanguage = (fromLang: string, toLang: string) => {
-    const next = { ...customizations.languageReplacements }
-    if (toLang === fromLang || toLang === '') {
-      delete next[fromLang]
-    } else {
-      next[fromLang] = toLang
-    }
-    onChange({ languageReplacements: next })
-  }
-
-  const addProfReplace = () => {
-    const next = { ...customizations.proficiencyReplacements, '': '' }
-    onChange({ proficiencyReplacements: next })
-  }
-
-  const setProfReplace = (oldKey: string, newKey: string, newVal: string) => {
-    const entries = Object.entries(customizations.proficiencyReplacements).filter(([k]) => k !== oldKey)
-    if (newKey) entries.push([newKey, newVal])
-    onChange({ proficiencyReplacements: Object.fromEntries(entries) })
-  }
-
-  const removeProfReplace = (key: string) => {
-    const next = { ...customizations.proficiencyReplacements }
-    delete next[key]
-    onChange({ proficiencyReplacements: next })
-  }
-
-  const hasAnyChange =
-    Object.keys(customizations.abilityScoreReplacements).length > 0 ||
-    Object.keys(customizations.languageReplacements).length > 0 ||
-    Object.keys(customizations.proficiencyReplacements).length > 0
-
-  return (
-    <div className="mt-4 border border-dnd-border rounded-lg overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-dnd-subtle hover:bg-dnd-card transition-colors text-left"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-dnd-text">✨ Customize Your Origin</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-dnd-border text-dnd-muted font-semibold">TCE</span>
-          {hasAnyChange && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-dnd-accent/20 text-dnd-accent font-semibold">
-              modified
-            </span>
-          )}
-        </div>
-        <Chevron open={open} className="text-dnd-muted" />
-      </button>
-
-      {open && (
-        <div className="px-4 py-4 space-y-5 bg-dnd-card border-t border-dnd-border">
-          <p className="text-xs text-dnd-muted leading-relaxed">
-            Tasha&apos;s Cauldron of Everything lets you move your racial ability bonuses to any stat,
-            swap languages, and replace skill or tool proficiencies granted by your race.
-          </p>
-
-          {/* ── Ability Score Replacements ── */}
-          {bonuses.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-dnd-muted uppercase tracking-wider mb-2">
-                Ability Score Increases
-              </p>
-              <div className="space-y-2">
-                {bonuses.map(([fromStat, bonus]) => {
-                  const target = customizations.abilityScoreReplacements[fromStat] ?? fromStat
-                  return (
-                    <div key={fromStat} className="flex items-center gap-2">
-                      <span className="text-xs text-dnd-muted w-20 flex-shrink-0">
-                        +{bonus} originally
-                      </span>
-                      <select
-                        value={target}
-                        onChange={(e) => patchAbility(fromStat, e.target.value)}
-                        className="flex-1 px-2 py-1.5 bg-dnd-subtle border border-dnd-border rounded text-sm text-dnd-text outline-none focus:border-dnd-accent"
-                      >
-                        {STAT_KEYS.map((s) => (
-                          <option key={s} value={s}>
-                            {s} {s === fromStat ? '(default)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── Language Replacements ── */}
-          {fixedLangs.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-dnd-muted uppercase tracking-wider mb-2">
-                Languages
-              </p>
-              <div className="space-y-2">
-                {fixedLangs.map((lang) => {
-                  const target = customizations.languageReplacements[lang] ?? lang
-                  return (
-                    <div key={lang} className="flex items-center gap-2">
-                      <span className="text-xs text-dnd-muted w-20 flex-shrink-0 truncate">{lang}</span>
-                      <select
-                        value={target}
-                        onChange={(e) => patchLanguage(lang, e.target.value)}
-                        className="flex-1 px-2 py-1.5 bg-dnd-subtle border border-dnd-border rounded text-sm text-dnd-text outline-none focus:border-dnd-accent"
-                      >
-                        <option value={lang}>{lang} (default)</option>
-                        {STANDARD_LANGUAGES.filter((l) => l !== lang).map((l) => (
-                          <option key={l} value={l}>{l}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── Proficiency Replacements (free-form) ── */}
-          <div>
-            <p className="text-xs font-semibold text-dnd-muted uppercase tracking-wider mb-2">
-              Proficiency Replacements
-            </p>
-            {Object.entries(customizations.proficiencyReplacements).map(([oldProf, newProf]) => (
-              <div key={oldProf} className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
-                  value={oldProf}
-                  onChange={(e) => setProfReplace(oldProf, e.target.value, newProf)}
-                  placeholder="Replace…"
-                  className="flex-1 px-2 py-1.5 bg-dnd-subtle border border-dnd-border rounded text-xs text-dnd-text placeholder:text-dnd-muted outline-none focus:border-dnd-accent"
-                />
-                <span className="text-dnd-muted text-xs flex-shrink-0">→</span>
-                <input
-                  type="text"
-                  value={newProf}
-                  onChange={(e) => setProfReplace(oldProf, oldProf, e.target.value)}
-                  placeholder="With…"
-                  className="flex-1 px-2 py-1.5 bg-dnd-subtle border border-dnd-border rounded text-xs text-dnd-text placeholder:text-dnd-muted outline-none focus:border-dnd-accent"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeProfReplace(oldProf)}
-                  className="text-dnd-muted hover:text-red-400 transition-colors text-sm flex-shrink-0"
-                  aria-label="Remove"
-                >✕</button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addProfReplace}
-              className="text-xs text-dnd-accent hover:opacity-80 transition-opacity font-semibold"
-            >
-              + Add replacement
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── Custom origin entries (always shown regardless of source settings) ─────────
 
 const CUSTOM_ORIGINS = [
@@ -689,11 +485,6 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
 
   const patchCustom = (patch: Partial<CustomLineageChoices>) =>
     onChange({ customLineageChoices: { ...data.customLineageChoices, ...patch } })
-
-  const patchOrigin = (patch: Partial<OriginCustomizations>) =>
-    onChange({ originCustomizations: { ...data.originCustomizations, ...patch } })
-
-  const selectedRace = races.find((r) => r.name === data.race) ?? null
 
   const isCustomSelected = CUSTOM_ORIGINS.some((c) => c.name === data.race)
 
@@ -779,17 +570,8 @@ export default function StepSpecies({ data, onChange, races, loading }: Props) {
         <div className="h-px flex-1 bg-dnd-border" />
       </div>
 
-      {/* ── Tasha's Origin Manager — shown directly after race is chosen, before the list ── */}
-      {!isCustomSelected && selectedRace && (
-        <OriginManager
-          race={selectedRace}
-          customizations={data.originCustomizations}
-          onChange={patchOrigin}
-        />
-      )}
-
       {/* Search */}
-      <div className="relative mb-3 mt-3">
+      <div className="relative mb-3">
         <svg className="absolute left-3 top-3 w-4 h-4 text-dnd-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
         </svg>

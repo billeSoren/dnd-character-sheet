@@ -240,6 +240,17 @@ export default function StepPreferences({ data, onChange, onStart, startError }:
     })
   }
 
+  const toggleSection = (codes: string[]) => {
+    const allSelected = codes.every((c) => data.selectedBooks.includes(c))
+    const next = allSelected
+      ? data.selectedBooks.filter((c) => !codes.includes(c))
+      : Array.from(new Set([...data.selectedBooks, ...codes]))
+    onChange({
+      selectedBooks: next,
+      allowedSources: recompute(data.edition, data.expandedRules, data.thirdParty, next),
+    })
+  }
+
   const selectedBookCount = data.selectedBooks.length
 
   return (
@@ -365,14 +376,26 @@ export default function StepPreferences({ data, onChange, onStart, startError }:
 
         {booksOpen && (
           <div className="mt-3 space-y-5">
-            {BOOK_SECTIONS.map(({ label, codes }) => (
-              <div key={label}>
-                <p className="text-[10px] font-semibold text-dnd-muted uppercase tracking-widest mb-2">
-                  {label}
-                </p>
-                <BookGrid codes={codes} selectedBooks={data.selectedBooks} onToggle={toggleBook} />
-              </div>
-            ))}
+            {BOOK_SECTIONS.map(({ label, codes }) => {
+              const allSelected = codes.every((c) => data.selectedBooks.includes(c))
+              return (
+                <div key={label}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-semibold text-dnd-muted uppercase tracking-widest">
+                      {label}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => toggleSection(codes)}
+                      className="text-[10px] font-semibold text-dnd-accent hover:opacity-70 transition-opacity"
+                    >
+                      {allSelected ? 'Deselect All' : 'Select All'}
+                    </button>
+                  </div>
+                  <BookGrid codes={codes} selectedBooks={data.selectedBooks} onToggle={toggleBook} />
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
